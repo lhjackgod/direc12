@@ -1,7 +1,9 @@
 
 #include "DirecMath.h"
+#include "MAT.h"
 int main()
 {
-	testThree();
+	//testThree();
+	testMOne();
 	return 0;
 }
