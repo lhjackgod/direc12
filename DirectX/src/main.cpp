@@ -4,6 +4,6 @@
 int main()
 {
 	//testThree();
-	testMOne();
+	testMTwo();
 	return 0;
 }

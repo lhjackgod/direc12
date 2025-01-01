@@ -42,3 +42,12 @@ void testMOne()
 	std::cout << "E = inverse(A) = " << std::endl << E << std::endl;
 	std::cout << "F = A * E = " << std::endl << F << std::endl;
 }
+
+void testMTwo()
+{
+	DirectX::XMMATRIX scaleMatrix = DirectX::XMMatrixScaling(0.5f, 0.5f, 0.5f);
+	DirectX::XMMATRIX oneMatrix = DirectX::XMMatrixIdentity();
+	DirectX::XMMATRIX res = scaleMatrix * oneMatrix;
+	DirectX::XMVECTOR res2 = DirectX::XMVector3TransformNormal(DirectX::XMVector4Normalize(DirectX::XMVectorSet(1.0, 1.0, 1.0, 0.0f)), scaleMatrix);
+	std::cout << res2 << std::endl;
+}
