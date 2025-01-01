@@ -1,9 +1,10 @@
 
 #include "DirecMath.h"
 #include "MAT.h"
+#include "initalDirectx.h"
 int main()
 {
 	//testThree();
-	testMTwo();
+	checkAdapters();
 	return 0;
 }

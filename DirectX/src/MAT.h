@@ -2,8 +2,6 @@
 #include <DirectXMath.h>
 #include <iostream>
 
-
-
 std::ostream& operator << (std::ostream& os, DirectX::FXMMATRIX v)
 {
 	for (int i = 0; i < 4; i++)
