@@ -1,10 +1,6 @@
-
-#include "DirecMath.h"
-#include "MAT.h"
-#include "initalDirectx.h"
+#include "Triangle.h"
 int main()
 {
-	//testThree();
-	checkAdapters();
+	HelloTriangle m_Triangle;
 	return 0;
 }
