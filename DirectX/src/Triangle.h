@@ -19,6 +19,8 @@ private:
 	long m_Height = 600;
 	ComPtr<ID3D12Device> m_Device;
 	ComPtr<ID3D12CommandQueue> m_CommandQueue;
+	ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
+	ComPtr<ID3D12GraphicsCommandList> m_CommandList;
 	ComPtr<IDXGISwapChain> m_SwapChain;
 	ComPtr<ID3D12DescriptorHeap> m_DescriptorHeap;
 	static const int swapChainBufferCount = 2;

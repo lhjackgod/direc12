@@ -80,6 +80,13 @@ void HelloTriangle::LoadPipeline()
 		queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
 		ThrowIfFailed(m_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(m_CommandQueue.GetAddressOf())));
+		ThrowIfFailed(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_CommandAllocator.GetAddressOf())));
+		ThrowIfFailed(m_Device->CreateCommandList(0,
+			D3D12_COMMAND_LIST_TYPE_DIRECT,
+			m_CommandAllocator.Get(),
+			nullptr,
+			IID_PPV_ARGS(m_CommandList.GetAddressOf())));
+		m_CommandList->Close();
 
 		DXGI_SWAP_CHAIN_DESC swapChainDesc{};
 		swapChainDesc.BufferDesc.Width = m_Width;
