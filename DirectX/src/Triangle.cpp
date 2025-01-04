@@ -122,6 +122,9 @@ void HelloTriangle::LoadPipeline()
 		ThrowIfFailed(m_Device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(m_DescriptorHeap.GetAddressOf())));
 
 		m_RTVDescriptorMaxCount = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		m_CBVSRVUAVDescriptorMaxCount = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		m_DSVDescriptorMaxCount = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
 		CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorPtr(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 		for (UINT i = 0; i < (UINT)swapChainBufferCount; i++)
 		{
@@ -129,4 +132,11 @@ void HelloTriangle::LoadPipeline()
 			m_Device->CreateRenderTargetView(m_SwapChainBuffer[i].Get(), nullptr, descriptorPtr);
 			descriptorPtr.Offset(1, m_RTVDescriptorMaxCount);
 		}
+
+		//create fence
+		ThrowIfFailed(m_Device->CreateFence(0,
+			D3D12_FENCE_FLAG_NONE,
+			IID_PPV_ARGS(m_FenceOne.GetAddressOf())));
+
+
 }

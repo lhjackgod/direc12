@@ -25,5 +25,8 @@ private:
 	ComPtr<ID3D12DescriptorHeap> m_DescriptorHeap;
 	static const int swapChainBufferCount = 2;
 	UINT m_RTVDescriptorMaxCount;
+	UINT m_DSVDescriptorMaxCount;
+	UINT m_CBVSRVUAVDescriptorMaxCount;
 	ComPtr<ID3D12Resource> m_SwapChainBuffer[swapChainBufferCount];
+	ComPtr<ID3D12Fence> m_FenceOne;
 };
