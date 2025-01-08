@@ -13,8 +13,12 @@ project "DirectX"
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
     files
     {
-        "{prj.name}/src/**.cpp",
-        "{prj.name}/src/**.h"
+        "%{prj.name}/src/**.cpp",
+        "%{prj.name}/src/**.h"
+    }
+    includedirs
+    {
+        "%{prj.name}/src"
     }
     filter "system:window"
         systemversion "latest"
