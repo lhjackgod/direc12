@@ -1,3 +1,4 @@
+#ifdef CREATEWINDOW
 #include "Win32Application.h"
 
 HWND Win32Application::m_Hwnd = nullptr;
@@ -68,3 +69,4 @@ LRESULT Win32Application::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
+#endif

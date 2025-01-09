@@ -1,3 +1,4 @@
+#ifdef CREATEWINDOW
 #include "D3d12HelloWindow.h"
 #include "d3dx12.h"
 #include "HelloWindow/Win32Application.h"
@@ -152,5 +153,6 @@ void HelloWindow::WaitForPreviousFrame()
 	m_FrambufferIndex = m_Swapchain->GetCurrentBackBufferIndex();
 	
 }
+#endif
 
 

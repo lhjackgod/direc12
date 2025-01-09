@@ -1,3 +1,4 @@
+#ifdef CREATEWINDOW
 #pragma once
 #include "HelloWindow/D3d12HelloWindow.h"
 class Win32Application
@@ -10,4 +11,4 @@ protected:
 private:
 	static HWND m_Hwnd;
 };
-
+#endif

@@ -1,3 +1,4 @@
+#ifdef CREATEWINDOW
 #pragma once
 #include <wrl.h>
 #include <d3d12.h>
@@ -74,3 +75,4 @@ private:
 	void PopulateCommandList();
 	void WaitForPreviousFrame();
 };
+#endif
