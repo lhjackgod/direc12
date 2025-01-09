@@ -1,7 +1,7 @@
 #include "Win32Application.h"
 
-HWND Win32Application::m_Hwnd;
-void Win32Application::Run(HelloWindow* pSample, HINSTANCE hInstance, int nCmdShow)
+HWND Win32Application::m_Hwnd = nullptr;
+int Win32Application::Run(HelloWindow* pSample, HINSTANCE hInstance, int nCmdShow)
 {
 	WNDCLASSEX WndClassEx{ 0 };
 	WndClassEx.cbSize = sizeof(WNDCLASSEX);
@@ -28,14 +28,41 @@ void Win32Application::Run(HelloWindow* pSample, HINSTANCE hInstance, int nCmdSh
 
 	pSample->OnInit();
 
-	
-	
+	ShowWindow(m_Hwnd, SW_SHOW);
+	std::cout << SW_SHOW << std::endl;
+	MSG msg{};
+	while (msg.message != WM_QUIT)
+	{
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+	pSample->OnDestroy();
+	return static_cast<char>(msg.wParam);
 }
 
 LRESULT Win32Application::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	if (msg == WM_DESTROY)
+	HelloWindow* window = reinterpret_cast<HelloWindow*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+	switch (msg)
 	{
+	case WM_CREATE:
+	{
+		LPCREATESTRUCT pCreateStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pCreateStruct->lpCreateParams));
+	}
+		
+		return 0;
+	case WM_PAINT:
+		if (window)
+		{
+			window->OnUpdate();
+			window->OnRender();
+		}
+		return 0;
+	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
 	}

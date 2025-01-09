@@ -38,7 +38,7 @@ public:
 class HelloWindow {
 public:
 	HelloWindow(UINT width, UINT height, std::wstring name);
-
+	
 	virtual void OnInit();
 	virtual void OnUpdate();
 	virtual void OnRender();
@@ -53,6 +53,8 @@ private:
 	DXGI_FORMAT m_BackFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	UINT m_FrambufferIndex;
 	UINT m_rtvDescriptorSize;
+	UINT m_FenceValue;
+	HANDLE m_FenceEvent;
 
 	ComPtr<IDXGIFactory4> m_Factory;
 	ComPtr<ID3D12Device> m_Device;
@@ -62,9 +64,13 @@ private:
 	ComPtr<ID3D12GraphicsCommandList> m_CommandList;
 	ComPtr<ID3D12DescriptorHeap> m_RtvDescriptorHeap;
 	ComPtr<ID3D12Resource> m_RenderTargets[FramCount];
+	ComPtr<ID3D12Fence> m_Fence;
+	ComPtr<ID3D12PipelineState> m_PipelineState;
 
 	HINSTANCE m_Hstance;
 
 	void LoadPipeline();
 	void LoadAsserts();
+	void PopulateCommandList();
+	void WaitForPreviousFrame();
 };

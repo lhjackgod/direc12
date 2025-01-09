@@ -2,15 +2,7 @@
 #include "d3dx12.h"
 #include "HelloWindow/Win32Application.h"
 
-LRESULT CALLBACK windowsProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	if (msg == WM_DESTROY)
-	{
-		PostQuitMessage(0);
-		return 0;
-	}
-	return DefWindowProc(hwnd, msg, wParam, lParam);
-}
+
 
 HelloWindow::HelloWindow(UINT width, UINT height, std::wstring name)
 	:m_FrambufferIndex(0), m_rtvDescriptorSize(0)
@@ -29,10 +21,20 @@ void HelloWindow::OnUpdate()
 
 void HelloWindow::OnRender()
 {
+	PopulateCommandList();
+
+	ID3D12CommandList* ppCommandLists[]{m_CommandList.Get()};
+	m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	ThrowIfFailed(m_Swapchain->Present(1, 0));
+	WaitForPreviousFrame();
 }
 
 void HelloWindow::OnDestroy()
 {
+	WaitForPreviousFrame();
+
+	CloseHandle(m_FenceEvent);
 }
 
 
@@ -105,6 +107,50 @@ void HelloWindow::LoadPipeline()
 
 void HelloWindow::LoadAsserts()
 {
+	//create CommandList
+	ThrowIfFailed(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
+		m_CommandAllocator.Get(), nullptr, IID_PPV_ARGS(m_CommandList.GetAddressOf())));
+	ThrowIfFailed(m_CommandList->Close());
+	//create fence
+	ThrowIfFailed(m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_Fence.GetAddressOf())));
+	m_FenceValue = 1;
+
+	m_FenceEvent = CreateEvent(nullptr, false, false, nullptr);
+	if (m_FenceEvent == nullptr)
+	{
+		ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+	}
+}
+
+void HelloWindow::PopulateCommandList()
+{
+	ThrowIfFailed(m_CommandAllocator->Reset());
+	ThrowIfFailed(m_CommandList->Reset(m_CommandAllocator.Get(), m_PipelineState.Get()));
+
+	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTargets[m_FrambufferIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_FrambufferIndex, m_rtvDescriptorSize);
+	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTargets[m_FrambufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+	ThrowIfFailed(m_CommandList->Close());
+}
+
+void HelloWindow::WaitForPreviousFrame()
+{
+	const UINT64 fence = m_FenceValue;
+	ThrowIfFailed(m_CommandQueue->Signal(m_Fence.Get(), fence));
+
+	m_FenceValue++;
+	if (m_Fence->GetCompletedValue() < fence)
+	{
+		ThrowIfFailed(m_Fence->SetEventOnCompletion(fence, m_FenceEvent));
+		WaitForSingleObject(m_FenceEvent, INFINITE);
+	}
+	m_FrambufferIndex = m_Swapchain->GetCurrentBackBufferIndex();
+	
 }
 
 
