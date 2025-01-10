@@ -6,6 +6,7 @@
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
 #include <iostream>
+#include <DirectXMath.h>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
@@ -38,7 +39,9 @@ class HelloTriangle
 {
 public:
 	HelloTriangle(UINT width, UINT height, const std::wstring& name):
-		m_Width(width), m_Height(height), lPclassName(name){ }
+		m_Width(width), m_Height(height), lPclassName(name) {
+		m_AspectRatio = (float)width / (float)height;
+	}
 
 	UINT getWidth() { return m_Width; }
 	UINT getHeight() { return m_Height; }
@@ -59,6 +62,13 @@ private:
 	UINT m_RtvDescriptorSize;
 	UINT m_FenceValue;
 	std::wstring lPclassName;
+	float m_AspectRatio;
+
+	struct Vertex
+	{
+		DirectX::XMFLOAT3 position;
+		DirectX::XMFLOAT4 color;
+	};
 
 	ComPtr<ID3D12Device> m_Device;
 	ComPtr<ID3D12CommandQueue> m_CommandQueue;
@@ -70,6 +80,10 @@ private:
 	ComPtr<ID3D12Fence1> m_Fence;
 	ComPtr<ID3D12PipelineState> m_PipelineState;
 	ComPtr<ID3D12RootSignature> m_RootSignature;
+	ComPtr<ID3D12Resource> m_VertexBuffer;
+	D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
+	D3D12_VIEWPORT m_ViewPort;
+	CD3DX12_RECT m_Scissor;
 	HANDLE m_FenceEvent;
 	void LoadPipeline();
 	void LoadAsserts();

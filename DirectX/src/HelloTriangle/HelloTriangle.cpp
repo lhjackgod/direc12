@@ -103,7 +103,17 @@ void HelloTriangle::LoadPipeline()
 			rtvDescriptorHand.Offset(1, m_RtvDescriptorSize);
 		}
 	}
+	m_ViewPort.Height = m_Height;
+	m_ViewPort.MaxDepth = 1.0f;
+	m_ViewPort.MinDepth = 0.0f;
+	m_ViewPort.TopLeftX = 0.0f;
+	m_ViewPort.TopLeftY = 0.0f;
+	m_ViewPort.Width = m_Width;
 
+	m_Scissor.bottom = static_cast<LONG>(m_Height);
+	m_Scissor.left = 0;
+	m_Scissor.right = static_cast<LONG>(m_Width);
+	m_Scissor.top = 0; 
 	ThrowIfFiled(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_CommandAllocator.GetAddressOf())));
 }
 
@@ -133,11 +143,10 @@ void HelloTriangle::LoadAsserts()
 	D3D12_INPUT_ELEMENT_DESC inputElementDesc[] =
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
-	psoDesc.NodeMask = 0;
 	psoDesc.InputLayout = { inputElementDesc, _countof(inputElementDesc) };
 	psoDesc.pRootSignature = m_RootSignature.Get();
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
@@ -153,6 +162,33 @@ void HelloTriangle::LoadAsserts()
 	psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
 	ThrowIfFiled(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(m_PipelineState.GetAddressOf())));
 
+	Vertex vertexs[] = 
+	{
+		{{0.0, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+		{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}
+	};
+	
+	UINT vertexBufferSize = sizeof(vertexs);
+	ThrowIfFiled(m_Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(m_VertexBuffer.GetAddressOf())
+	));
+
+	UINT8* pVertexDataBegin;
+	CD3DX12_RANGE readRange(0, 0);
+	ThrowIfFiled(m_VertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+	memcpy(pVertexDataBegin, vertexs, vertexBufferSize);
+	m_VertexBuffer->Unmap(0, nullptr);
+
+	m_VertexBufferView.BufferLocation = m_VertexBuffer->GetGPUVirtualAddress();
+	m_VertexBufferView.StrideInBytes = sizeof(Vertex);
+	m_VertexBufferView.SizeInBytes = vertexBufferSize;
+
 	m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocator.Get(), nullptr, IID_PPV_ARGS(m_CommandList.GetAddressOf()));
 	ThrowIfFiled(m_CommandList->Close());
 	m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_Fence.GetAddressOf()));
@@ -163,6 +199,7 @@ void HelloTriangle::LoadAsserts()
 	{
 		ThrowIfFiled(HRESULT_FROM_WIN32(GetLastError()));
 	}
+	waitForFinish();
 }
 
 void HelloTriangle::waitForFinish()
@@ -184,13 +221,22 @@ void HelloTriangle::populateCommandList()
 	ThrowIfFiled(m_CommandAllocator->Reset());
 	ThrowIfFiled(m_CommandList->Reset(m_CommandAllocator.Get(), m_PipelineState.Get()));
 
+	m_CommandList->SetGraphicsRootSignature(m_RootSignature.Get());
+	m_CommandList->RSSetViewports(1, &m_ViewPort);
+	m_CommandList->RSSetScissorRects(1, &m_Scissor);
+
 	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderBuffer[m_FramIndex].Get(),
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-	float ClearColor[4]{ 0.0f, 0.2f, 0.4f, 1.0f };
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_FramIndex, m_RtvDescriptorSize);
+	m_CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+	float ClearColor[4]{ 0.0f, 1.f, 0.f, 1.0f };
 	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_FramIndex, m_RtvDescriptorSize);
 	m_CommandList->ClearRenderTargetView(handle, ClearColor, 0, nullptr);
-
+	m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_CommandList->IASetVertexBuffers(0, 1, &m_VertexBufferView);
+	m_CommandList->DrawInstanced(3, 1, 0, 0);
 	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderBuffer[m_FramIndex].Get(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
