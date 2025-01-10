@@ -109,6 +109,27 @@ void HelloTriangle::LoadPipeline()
 
 void HelloTriangle::LoadAsserts()
 {
+	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	ComPtr<ID3DBlob> signature;
+	ComPtr<ID3DBlob> error;
+	ThrowIfFiled(D3D12SerializeRootSignature(&rootSignatureDesc,
+		D3D_ROOT_SIGNATURE_VERSION_1, signature.GetAddressOf(), error.GetAddressOf()));
+	ThrowIfFiled(m_Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(m_RootSignature.GetAddressOf())));
+
+	ComPtr<ID3DBlob> vertexShader;
+	ComPtr<ID3DBlob> pixelShader;
+
+#if defined(DEBUG) || defined(_DEBUG)
+	UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+	UINT compileFlags = 0;
+#endif
+	ThrowIfFiled(D3DCompileFromFile(L"src/HelloTriangle/shader/shader.hlsl",
+		nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, vertexShader.GetAddressOf(), nullptr));
+	ThrowIfFiled(D3DCompileFromFile(L"src/HelloTriangle/shader/shader.hlsl",
+		nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, pixelShader.GetAddressOf(), nullptr));
+
 	m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocator.Get(), nullptr, IID_PPV_ARGS(m_CommandList.GetAddressOf()));
 	ThrowIfFiled(m_CommandList->Close());
 	m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_Fence.GetAddressOf()));

@@ -69,6 +69,7 @@ private:
 	ComPtr<ID3D12Resource> m_RenderBuffer[FramBufferCount];
 	ComPtr<ID3D12Fence1> m_Fence;
 	ComPtr<ID3D12PipelineState> m_PipelineState;
+	ComPtr<ID3D12RootSignature> m_RootSignature;
 	HANDLE m_FenceEvent;
 	void LoadPipeline();
 	void LoadAsserts();
