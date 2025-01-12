@@ -1,244 +1,251 @@
+#ifdef HelloTriangle
 #include "HelloTriangle.h"
 #include <HelloTriangle/HelloTriangleWin.h>
-void HelloTriangle::OnInit()
+namespace HelloTriangle
 {
-	LoadPipeline();
-	LoadAsserts();
-}
-
-void HelloTriangle::OnDestroy()
-{
-	waitForFinish();
-	CloseHandle(m_FenceEvent);
-}
-
-void HelloTriangle::OnRender()
-{
-	populateCommandList();
-
-	ID3D12CommandList* ppCommandList[] = { m_CommandList.Get() };
-	m_CommandQueue->ExecuteCommandLists(_countof(ppCommandList), ppCommandList);
-	ThrowIfFiled(m_SwapChain->Present(1, 0));
-
-	waitForFinish();
-}
-
-void HelloTriangle::OnUpdate()
-{
-}
-
-void HelloTriangle::DealWithCommandLineArgs(int argc, WCHAR* argv[])
-{
-	for (int i = 1; i < argc; i++)
+	void HelloTriangle::OnInit()
 	{
-		if (_wcsnicmp(argv[i], L"-warp", wcslen(argv[i])) == 0 ||
-			_wcsnicmp(argv[i], L"/warp", wcslen(argv[i])) == 0)
+		LoadPipeline();
+		LoadAsserts();
+	}
+
+	void HelloTriangle::OnDestroy()
+	{
+		waitForFinish();
+		CloseHandle(m_FenceEvent);
+	}
+
+	void HelloTriangle::OnRender()
+	{
+		populateCommandList();
+
+		ID3D12CommandList* ppCommandList[] = { m_CommandList.Get() };
+		m_CommandQueue->ExecuteCommandLists(_countof(ppCommandList), ppCommandList);
+		ThrowIfFiled(m_SwapChain->Present(1, 0));
+
+		waitForFinish();
+	}
+
+	void HelloTriangle::OnUpdate()
+	{
+	}
+
+	void HelloTriangle::DealWithCommandLineArgs(int argc, WCHAR* argv[])
+	{
+		for (int i = 1; i < argc; i++)
 		{
-			m_UseWarpDevice = true;
+			if (_wcsnicmp(argv[i], L"-warp", wcslen(argv[i])) == 0 ||
+				_wcsnicmp(argv[i], L"/warp", wcslen(argv[i])) == 0)
+			{
+				m_UseWarpDevice = true;
+			}
 		}
 	}
-}
 
-void HelloTriangle::LoadPipeline()
-{
-	UINT dxgiFactoryFlags = 0;
+	void HelloTriangle::LoadPipeline()
+	{
+		UINT dxgiFactoryFlags = 0;
 #if defined(DEBUG) || defined (_DEBUG)
-	ComPtr<ID3D12Debug> debug;
-	ThrowIfFiled(D3D12GetDebugInterface(IID_PPV_ARGS(debug.GetAddressOf())));
-	debug->EnableDebugLayer();
-	dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+		ComPtr<ID3D12Debug> debug;
+		ThrowIfFiled(D3D12GetDebugInterface(IID_PPV_ARGS(debug.GetAddressOf())));
+		debug->EnableDebugLayer();
+		dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 #endif
 
-	ComPtr<IDXGIFactory4> factory;
-	ThrowIfFiled(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)));
-	if (m_UseWarpDevice)
-	{
-		ComPtr<IDXGIAdapter> WrapAdapter;
-		ThrowIfFiled(factory->EnumWarpAdapter(IID_PPV_ARGS(WrapAdapter.GetAddressOf())));
-
-		ThrowIfFiled(D3D12CreateDevice(WrapAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(m_Device.GetAddressOf())));
-	}
-	else
-	{
-		ThrowIfFiled(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(m_Device.GetAddressOf())));
-	}
-	D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
-	commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	commandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-	ThrowIfFiled(m_Device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(m_CommandQueue.GetAddressOf())));
-
-	DXGI_SWAP_CHAIN_DESC1 swapChainDes = {};
-	swapChainDes.BufferCount = FramBufferCount;
-	swapChainDes.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDes.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainDes.Height = m_Height;
-	swapChainDes.Width = m_Width;
-	swapChainDes.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	swapChainDes.SampleDesc.Count = 1;
-	swapChainDes.SampleDesc.Quality = 0;
-
-	ComPtr<IDXGISwapChain1> swapChain;
-	ThrowIfFiled(factory->CreateSwapChainForHwnd(m_CommandQueue.Get(),
-		HelloTriangleWin::getWnd(),
-		&swapChainDes,
-		nullptr, nullptr, swapChain.GetAddressOf()));
-	ThrowIfFiled(swapChain.As(&m_SwapChain));
-	m_FramIndex = m_SwapChain->GetCurrentBackBufferIndex();
-
-	m_RtvDescriptorSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
-	{
-		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc{};
-		descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-		descriptorHeapDesc.NumDescriptors = FramBufferCount;
-		descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-		ThrowIfFiled(m_Device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(m_DescriptorHeap.GetAddressOf())));
-
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHand(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-		for (int i = 0; i < FramBufferCount; i++)
+		ComPtr<IDXGIFactory4> factory;
+		ThrowIfFiled(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)));
+		if (m_UseWarpDevice)
 		{
-			ThrowIfFiled(m_SwapChain->GetBuffer(i, IID_PPV_ARGS(m_RenderBuffer[i].GetAddressOf())));
-			m_Device->CreateRenderTargetView(m_RenderBuffer[i].Get(), nullptr, rtvDescriptorHand);
-			rtvDescriptorHand.Offset(1, m_RtvDescriptorSize);
+			ComPtr<IDXGIAdapter> WrapAdapter;
+			ThrowIfFiled(factory->EnumWarpAdapter(IID_PPV_ARGS(WrapAdapter.GetAddressOf())));
+
+			ThrowIfFiled(D3D12CreateDevice(WrapAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(m_Device.GetAddressOf())));
 		}
+		else
+		{
+			ThrowIfFiled(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(m_Device.GetAddressOf())));
+		}
+		D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
+		commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+		commandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+		ThrowIfFiled(m_Device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(m_CommandQueue.GetAddressOf())));
+
+		DXGI_SWAP_CHAIN_DESC1 swapChainDes = {};
+		swapChainDes.BufferCount = FramBufferCount;
+		swapChainDes.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		swapChainDes.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		swapChainDes.Height = m_Height;
+		swapChainDes.Width = m_Width;
+		swapChainDes.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+		swapChainDes.SampleDesc.Count = 1;
+		swapChainDes.SampleDesc.Quality = 0;
+
+		ThrowIfFiled(factory->MakeWindowAssociation(HelloTriangleWin::getWnd(), DXGI_MWA_NO_ALT_ENTER));
+		ComPtr<IDXGISwapChain1> swapChain;
+		ThrowIfFiled(factory->CreateSwapChainForHwnd(m_CommandQueue.Get(),
+			HelloTriangleWin::getWnd(),
+			&swapChainDes,
+			nullptr, nullptr, swapChain.GetAddressOf()));
+		ThrowIfFiled(swapChain.As(&m_SwapChain));
+		m_FramIndex = m_SwapChain->GetCurrentBackBufferIndex();
+
+		m_RtvDescriptorSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+		{
+			D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc{};
+			descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+			descriptorHeapDesc.NumDescriptors = FramBufferCount;
+			descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+			ThrowIfFiled(m_Device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(m_DescriptorHeap.GetAddressOf())));
+
+			CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHand(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+			for (int i = 0; i < FramBufferCount; i++)
+			{
+				ThrowIfFiled(m_SwapChain->GetBuffer(i, IID_PPV_ARGS(m_RenderBuffer[i].GetAddressOf())));
+				m_Device->CreateRenderTargetView(m_RenderBuffer[i].Get(), nullptr, rtvDescriptorHand);
+				rtvDescriptorHand.Offset(1, m_RtvDescriptorSize);
+			}
+		}
+		m_ViewPort.Height = m_Height;
+		m_ViewPort.MaxDepth = 1.0f;
+		m_ViewPort.MinDepth = 0.0f;
+		m_ViewPort.TopLeftX = 0.0f;
+		m_ViewPort.TopLeftY = 0.0f;
+		m_ViewPort.Width = m_Width;
+
+		m_Scissor.bottom = static_cast<LONG>(m_Height);
+		m_Scissor.left = 0;
+		m_Scissor.right = static_cast<LONG>(m_Width);
+		m_Scissor.top = 0;
+		ThrowIfFiled(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_CommandAllocator.GetAddressOf())));
 	}
-	m_ViewPort.Height = m_Height;
-	m_ViewPort.MaxDepth = 1.0f;
-	m_ViewPort.MinDepth = 0.0f;
-	m_ViewPort.TopLeftX = 0.0f;
-	m_ViewPort.TopLeftY = 0.0f;
-	m_ViewPort.Width = m_Width;
 
-	m_Scissor.bottom = static_cast<LONG>(m_Height);
-	m_Scissor.left = 0;
-	m_Scissor.right = static_cast<LONG>(m_Width);
-	m_Scissor.top = 0; 
-	ThrowIfFiled(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_CommandAllocator.GetAddressOf())));
-}
+	void HelloTriangle::LoadAsserts()
+	{
+		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+		rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		ComPtr<ID3DBlob> signature;
+		ComPtr<ID3DBlob> error;
+		ThrowIfFiled(D3D12SerializeRootSignature(&rootSignatureDesc,
+			D3D_ROOT_SIGNATURE_VERSION_1, signature.GetAddressOf(), error.GetAddressOf()));
+		ThrowIfFiled(m_Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(m_RootSignature.GetAddressOf())));
 
-void HelloTriangle::LoadAsserts()
-{
-	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-	rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-	ComPtr<ID3DBlob> signature;
-	ComPtr<ID3DBlob> error;
-	ThrowIfFiled(D3D12SerializeRootSignature(&rootSignatureDesc,
-		D3D_ROOT_SIGNATURE_VERSION_1, signature.GetAddressOf(), error.GetAddressOf()));
-	ThrowIfFiled(m_Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(m_RootSignature.GetAddressOf())));
-
-	ComPtr<ID3DBlob> vertexShader;
-	ComPtr<ID3DBlob> pixelShader;
+		ComPtr<ID3DBlob> vertexShader;
+		ComPtr<ID3DBlob> pixelShader;
 
 #if defined(DEBUG) || defined(_DEBUG)
-	UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+		UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #else
-	UINT compileFlags = 0;
+		UINT compileFlags = 0;
 #endif
-	ThrowIfFiled(D3DCompileFromFile(L"src/HelloTriangle/shader/shader.hlsl",
-		nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, vertexShader.GetAddressOf(), nullptr));
-	ThrowIfFiled(D3DCompileFromFile(L"src/HelloTriangle/shader/shader.hlsl",
-		nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, pixelShader.GetAddressOf(), nullptr));
+		ThrowIfFiled(D3DCompileFromFile(L"src/HelloTriangle/shader/shader.hlsl",
+			nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, vertexShader.GetAddressOf(), nullptr));
+		ThrowIfFiled(D3DCompileFromFile(L"src/HelloTriangle/shader/shader.hlsl",
+			nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, pixelShader.GetAddressOf(), nullptr));
 
-	D3D12_INPUT_ELEMENT_DESC inputElementDesc[] =
-	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
-	};
+		D3D12_INPUT_ELEMENT_DESC inputElementDesc[] =
+		{
+			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+			{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		};
 
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
-	psoDesc.InputLayout = { inputElementDesc, _countof(inputElementDesc) };
-	psoDesc.pRootSignature = m_RootSignature.Get();
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState.DepthEnable = FALSE;
-	psoDesc.DepthStencilState.StencilEnable = FALSE;
-	psoDesc.NumRenderTargets = 1;
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixelShader.Get());
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	psoDesc.SampleDesc.Count = 1;
-	psoDesc.SampleMask = UINT_MAX;
-	psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
-	ThrowIfFiled(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(m_PipelineState.GetAddressOf())));
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
+		psoDesc.InputLayout = { inputElementDesc, _countof(inputElementDesc) };
+		psoDesc.pRootSignature = m_RootSignature.Get();
+		psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		psoDesc.DepthStencilState.DepthEnable = FALSE;
+		psoDesc.DepthStencilState.StencilEnable = FALSE;
+		psoDesc.NumRenderTargets = 1;
+		psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixelShader.Get());
+		psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		psoDesc.SampleDesc.Count = 1;
+		psoDesc.SampleMask = UINT_MAX;
+		psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
+		ThrowIfFiled(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(m_PipelineState.GetAddressOf())));
 
-	Vertex vertexs[] = 
-	{
-		{{0.0, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-		{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}
-	};
-	
-	UINT vertexBufferSize = sizeof(vertexs);
-	ThrowIfFiled(m_Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(m_VertexBuffer.GetAddressOf())
-	));
+		Vertex vertexs[] =
+		{
+			{{0.0, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+			{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}
+		};
 
-	UINT8* pVertexDataBegin;
-	CD3DX12_RANGE readRange(0, 0);
-	ThrowIfFiled(m_VertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-	memcpy(pVertexDataBegin, vertexs, vertexBufferSize);
-	m_VertexBuffer->Unmap(0, nullptr);
+		UINT vertexBufferSize = sizeof(vertexs);
+		ThrowIfFiled(m_Device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(m_VertexBuffer.GetAddressOf())
+		));
 
-	m_VertexBufferView.BufferLocation = m_VertexBuffer->GetGPUVirtualAddress();
-	m_VertexBufferView.StrideInBytes = sizeof(Vertex);
-	m_VertexBufferView.SizeInBytes = vertexBufferSize;
+		UINT8* pVertexDataBegin;
+		CD3DX12_RANGE readRange(0, 0);
+		ThrowIfFiled(m_VertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+		memcpy(pVertexDataBegin, vertexs, vertexBufferSize);
+		m_VertexBuffer->Unmap(0, nullptr);
 
-	m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocator.Get(), nullptr, IID_PPV_ARGS(m_CommandList.GetAddressOf()));
-	ThrowIfFiled(m_CommandList->Close());
-	m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_Fence.GetAddressOf()));
-	m_FenceValue = 1;
+		m_VertexBufferView.BufferLocation = m_VertexBuffer->GetGPUVirtualAddress();
+		m_VertexBufferView.StrideInBytes = sizeof(Vertex);
+		m_VertexBufferView.SizeInBytes = vertexBufferSize;
 
-	m_FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	if (m_FenceEvent == nullptr)
-	{
-		ThrowIfFiled(HRESULT_FROM_WIN32(GetLastError()));
+		m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocator.Get(), nullptr, IID_PPV_ARGS(m_CommandList.GetAddressOf()));
+		ThrowIfFiled(m_CommandList->Close());
+		m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_Fence.GetAddressOf()));
+		m_FenceValue = 1;
+
+		m_FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		if (m_FenceEvent == nullptr)
+		{
+			ThrowIfFiled(HRESULT_FROM_WIN32(GetLastError()));
+		}
+		waitForFinish();
 	}
-	waitForFinish();
-}
 
-void HelloTriangle::waitForFinish()
-{
-	const UINT64 fence = m_FenceValue;
-
-	ThrowIfFiled(m_CommandQueue->Signal(m_Fence.Get(), m_FenceValue));
-	m_FenceValue++;
-	if (m_Fence->GetCompletedValue() < fence)
+	void HelloTriangle::waitForFinish()
 	{
-		ThrowIfFiled(m_Fence->SetEventOnCompletion(fence, m_FenceEvent));
-		WaitForSingleObject(m_FenceEvent, INFINITE);
+		const UINT64 fence = m_FenceValue;
+
+		ThrowIfFiled(m_CommandQueue->Signal(m_Fence.Get(), m_FenceValue));
+		m_FenceValue++;
+		if (m_Fence->GetCompletedValue() < fence)
+		{
+			ThrowIfFiled(m_Fence->SetEventOnCompletion(fence, m_FenceEvent));
+			WaitForSingleObject(m_FenceEvent, INFINITE);
+		}
+		m_FramIndex = m_SwapChain->GetCurrentBackBufferIndex();
 	}
-	m_FramIndex = m_SwapChain->GetCurrentBackBufferIndex();
+
+	void HelloTriangle::populateCommandList()
+	{
+		ThrowIfFiled(m_CommandAllocator->Reset());
+		ThrowIfFiled(m_CommandList->Reset(m_CommandAllocator.Get(), m_PipelineState.Get()));
+
+		m_CommandList->SetGraphicsRootSignature(m_RootSignature.Get());
+		m_CommandList->RSSetViewports(1, &m_ViewPort);
+		m_CommandList->RSSetScissorRects(1, &m_Scissor);
+
+		m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderBuffer[m_FramIndex].Get(),
+			D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_FramIndex, m_RtvDescriptorSize);
+		m_CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+		float ClearColor[4]{ 0.0f, 1.f, 0.f, 1.0f };
+		CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_FramIndex, m_RtvDescriptorSize);
+		m_CommandList->ClearRenderTargetView(handle, ClearColor, 0, nullptr);
+		m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		m_CommandList->IASetVertexBuffers(0, 1, &m_VertexBufferView);
+		m_CommandList->DrawInstanced(3, 1, 0, 0);
+		m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderBuffer[m_FramIndex].Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+		ThrowIfFiled(m_CommandList->Close());
+	}
 }
 
-void HelloTriangle::populateCommandList()
-{
-	ThrowIfFiled(m_CommandAllocator->Reset());
-	ThrowIfFiled(m_CommandList->Reset(m_CommandAllocator.Get(), m_PipelineState.Get()));
-
-	m_CommandList->SetGraphicsRootSignature(m_RootSignature.Get());
-	m_CommandList->RSSetViewports(1, &m_ViewPort);
-	m_CommandList->RSSetScissorRects(1, &m_Scissor);
-
-	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderBuffer[m_FramIndex].Get(),
-		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_FramIndex, m_RtvDescriptorSize);
-	m_CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
-
-	float ClearColor[4]{ 0.0f, 1.f, 0.f, 1.0f };
-	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_FramIndex, m_RtvDescriptorSize);
-	m_CommandList->ClearRenderTargetView(handle, ClearColor, 0, nullptr);
-	m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_CommandList->IASetVertexBuffers(0, 1, &m_VertexBufferView);
-	m_CommandList->DrawInstanced(3, 1, 0, 0);
-	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderBuffer[m_FramIndex].Get(),
-		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-
-	ThrowIfFiled(m_CommandList->Close());
-}
+#endif

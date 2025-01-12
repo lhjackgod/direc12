@@ -13,6 +13,8 @@
     <ClInclude Include="src\HelloWindow\Win32Application.h" />
     <ClInclude Include="src\HelloTriangle\HelloTriangle.h" />
     <ClInclude Include="src\HelloTriangle\HelloTriangleWin.h" />
+    <ClInclude Include="src\Material\Material.h" />
+    <ClInclude Include="src\Material\MaterialWinApplication.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\HelloWindow\D3d12HelloWindow.cpp">
@@ -22,5 +24,7 @@
     <ClCompile Include="src\HelloWindow\Win32Application.cpp" />
     <ClCompile Include="src\HelloTriangle\HelloTriangle.cpp" />
     <ClCompile Include="src\HelloTriangle\HelloTriangleWin.cpp" />
+    <ClCompile Include="src\Material\Material.cpp" />
+    <ClCompile Include="src\Material\MaterialWinApplication.cpp" />
   </ItemGroup>
 </Project>
