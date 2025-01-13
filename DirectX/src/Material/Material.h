@@ -3,8 +3,8 @@
 #include <iostream>
 #include <wrl.h>
 #include <dxgi1_6.h>
-#include <d3dx12.h>
 #include <d3d12.h>
+#include <d3dx12.h>
 #include <d3dcompiler.h>
 #include <Windows.h>
 #include <DirectXMath.h>
@@ -72,6 +72,7 @@ private:
 	void waitForFinish();
 	void populateCommandList();
 	void GetHardwareAdapter(IDXGIAdapter1** adapter, IDXGIFactory7* factory, bool requestHightPerformanceAdapter);
+	std::vector<UINT8> GenerateTextureData();
 
 	int m_Width;
 	int m_Height;
@@ -81,10 +82,14 @@ private:
 	UINT RTVTOTALSIZE;
 	int m_CurrentBackFrambufferIndex = 0;
 	UINT m_FenceValue;
+	UINT m_ImageWidth = 256;
+	UINT m_ImageHeight = 256;
+	UINT m_TexturePixelSize = 4;
+
 	struct Vertex
 	{
 		DirectX::XMFLOAT3 Position;
-		DirectX::XMFLOAT4 Color;
+		DirectX::XMFLOAT2 uv;
 	};
 
 
@@ -99,6 +104,8 @@ private:
 	ComPtr<ID3D12DescriptorHeap> m_rtvDescritorHeap;
 	ComPtr<ID3D12RootSignature> m_RootSignature;
 	ComPtr<ID3D12Resource> m_VertexBuffer;
+	ComPtr<ID3D12Resource> m_gpuTextureResource;
+	ComPtr<ID3D12DescriptorHeap> m_SrvDescriptorHeap;
 	HANDLE m_FenceEvent;
 	D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
 	D3D12_VIEWPORT m_ViewPort;

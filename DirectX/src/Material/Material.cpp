@@ -94,6 +94,12 @@ void Material::LoadPipeline()
 		descritorHeap.NodeMask = 0;
 		ThrowIfFiled(m_Device->CreateDescriptorHeap(&descritorHeap, IID_PPV_ARGS(m_rtvDescritorHeap.GetAddressOf())));
 
+		D3D12_DESCRIPTOR_HEAP_DESC srvHeap{};
+		srvHeap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		srvHeap.NumDescriptors = 1;
+		srvHeap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		ThrowIfFiled(m_Device->CreateDescriptorHeap(&srvHeap, IID_PPV_ARGS(m_SrvDescriptorHeap.GetAddressOf())));
+
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescritorHeap->GetCPUDescriptorHandleForHeapStart());
 
 		for (UINT i = 0; i < framBufferCount; i++)
@@ -115,20 +121,57 @@ void Material::LoadAssert()
 		m_CommandAllocator.Get(), nullptr, IID_PPV_ARGS(m_CommandList.GetAddressOf())));
 
 	ThrowIfFiled(m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_Fence.GetAddressOf())));
-	ThrowIfFiled(m_CommandList->Close());
 
-	//create vertex buffer
-	// create rootsignature
-	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc{};
-	rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-	ComPtr<ID3DBlob> signature;
+	D3D12_FEATURE_DATA_ROOT_SIGNATURE rootSignatureFeature{};
+	rootSignatureFeature.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+
+	if (FAILED(m_Device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE,
+		&rootSignatureFeature, sizeof(rootSignatureFeature))))
+	{
+		rootSignatureFeature.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+	}
+
+
+	CD3DX12_DESCRIPTOR_RANGE1 desciptorRanges[1];
+	desciptorRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+
+	CD3DX12_ROOT_PARAMETER1 rootParamter[1];
+	rootParamter[0].InitAsDescriptorTable(1, &desciptorRanges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+
+	CD3DX12_STATIC_SAMPLER_DESC staticSampler{};
+	staticSampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+	staticSampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	staticSampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	staticSampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	staticSampler.MipLODBias = 0;
+	staticSampler.MaxAnisotropy = 0;
+	staticSampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	staticSampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+	staticSampler.MinLOD = 0.0f;
+	staticSampler.MaxLOD = D3D12_FLOAT32_MAX;
+	staticSampler.ShaderRegister = 0;
+	staticSampler.RegisterSpace = 0;
+	staticSampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC versionRootSignatureDesc{};
+	versionRootSignatureDesc.Init_1_1(_countof(rootParamter), rootParamter,
+		1, &staticSampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	ComPtr<ID3DBlob> rootSignature;
 	ComPtr<ID3DBlob> error;
-	ThrowIfFiled(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, signature.GetAddressOf(), error.GetAddressOf()));
-	ThrowIfFiled(m_Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(m_RootSignature.GetAddressOf())));
+	
+	D3DX12SerializeVersionedRootSignature(&versionRootSignatureDesc,
+		rootSignatureFeature.HighestVersion, rootSignature.GetAddressOf(),
+		error.GetAddressOf());
+	ThrowIfFiled(m_Device->CreateRootSignature(0,
+		rootSignature->GetBufferPointer(),
+		rootSignature->GetBufferSize(),
+		IID_PPV_ARGS(m_RootSignature.GetAddressOf())));
 
 	D3D12_INPUT_ELEMENT_DESC inputElement[] = {
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -141,9 +184,9 @@ void Material::LoadAssert()
 	ComPtr<ID3DBlob> vShader;
 	ComPtr<ID3DBlob> pShader;
 
-	ThrowIfFiled(D3DCompileFromFile(L"src/HelloTriangle/shader/shader.hlsl", nullptr,
+	ThrowIfFiled(D3DCompileFromFile(L"src/Material/shader/Material.hlsl", nullptr,
 		nullptr, "VSMain", "vs_5_0", compileFLag, 0, vShader.GetAddressOf(), nullptr));
-	ThrowIfFiled(D3DCompileFromFile(L"src/HelloTriangle/shader/shader.hlsl", nullptr,
+	ThrowIfFiled(D3DCompileFromFile(L"src/Material/shader/Material.hlsl", nullptr,
 		nullptr, "PSMain", "ps_5_0", compileFLag, 0, pShader.GetAddressOf(), nullptr));
 	
 	//load pipeline
@@ -167,9 +210,9 @@ void Material::LoadAssert()
 
 	Vertex vertexs[] =
 	{
-		{{0.0f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-		{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f ,1.0f, 1.0f}}
+		{{0.0f, 0.5f, 0.0f}, { 0.5f, 0.0f }},
+		{{0.5f, -0.5f, 0.0f}, { 1.0f, 1.0f }},
+		{{-0.5f, -0.5f, 0.0f}, { 0.0f, 1.0f }}
 	};
 	UINT vertexBufferSize = sizeof(vertexs);
 	ThrowIfFiled(m_Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -187,6 +230,63 @@ void Material::LoadAssert()
 	m_VertexBufferView.BufferLocation = m_VertexBuffer->GetGPUVirtualAddress();
 	m_VertexBufferView.SizeInBytes = vertexBufferSize;
 	m_VertexBufferView.StrideInBytes = sizeof(Vertex);
+
+	ComPtr<ID3D12Resource> m_TextureBuffer;
+	{
+		//texture
+		D3D12_RESOURCE_DESC textureDesc{};
+		textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		textureDesc.Width = m_ImageWidth;
+		textureDesc.Height = m_ImageHeight;
+		textureDesc.DepthOrArraySize = 1;
+		textureDesc.MipLevels = 1;
+		textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		textureDesc.SampleDesc.Count = 1;
+		textureDesc.SampleDesc.Quality = 0;
+		textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+		ThrowIfFiled(m_Device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&textureDesc,
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			nullptr,
+			IID_PPV_ARGS(m_gpuTextureResource.GetAddressOf())
+		));
+
+		const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_gpuTextureResource.Get(),
+			0, 1);
+
+		ThrowIfFiled(m_Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr, IID_PPV_ARGS(m_TextureBuffer.GetAddressOf())));
+
+		std::vector<UINT8> texture = GenerateTextureData();
+
+		D3D12_SUBRESOURCE_DATA textureData{};
+		textureData.pData = texture.data();
+		textureData.RowPitch = m_ImageWidth * m_TexturePixelSize;
+		textureData.SlicePitch = m_ImageHeight * textureData.RowPitch;
+		UpdateSubresources(m_CommandList.Get(), m_gpuTextureResource.Get(), m_TextureBuffer.Get(),
+			0, 0, 1, &textureData);
+		m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+			m_gpuTextureResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		));
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.Texture2D.MipLevels = 1;
+		m_Device->CreateShaderResourceView(m_gpuTextureResource.Get(), &srvDesc,
+			m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	}
+
+	ThrowIfFiled(m_CommandList->Close());
+
+	ID3D12CommandList* commandLists[] = {m_CommandList.Get()};
+	m_CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
 	m_FenceValue = 1;
 	m_FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -217,18 +317,26 @@ void Material::populateCommandList()
 	ThrowIfFiled(m_CommandAllocator->Reset());
 	ThrowIfFiled(m_CommandList->Reset(m_CommandAllocator.Get(), m_PiplineSate.Get()));
 
-	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_Frambuffer[m_CurrentBackFrambufferIndex].Get(),
-		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	
 
 	float clearColor[] = { 0.0f, 0.4f, 0.2f, 1.0f };
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescritorHeap->GetCPUDescriptorHandleForHeapStart(), m_CurrentBackFrambufferIndex, RTVTOTALSIZE);
-	m_CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
-	m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
 
 	m_CommandList->SetGraphicsRootSignature(m_RootSignature.Get());
+
+	ID3D12DescriptorHeap* ppHeaps[] = { m_SrvDescriptorHeap.Get() };
+	m_CommandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+	m_CommandList->SetGraphicsRootDescriptorTable(0, m_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 	m_CommandList->RSSetViewports(1, &m_ViewPort);
+
 	m_CommandList->RSSetScissorRects(1, &m_SsiorRect);
+
+	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_Frambuffer[m_CurrentBackFrambufferIndex].Get(),
+		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	m_CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
 	m_CommandList->IASetVertexBuffers(0, 1, &m_VertexBufferView);
 	m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -287,4 +395,40 @@ void Material::GetHardwareAdapter(IDXGIAdapter1** adapter, IDXGIFactory7* factor
 		}
 	}
 	*adapter = pAdapter.Detach();
+}
+
+std::vector<UINT8> Material::GenerateTextureData()
+{
+	const UINT rowPitch = m_ImageWidth  * m_TexturePixelSize;
+	const UINT cellPitch = rowPitch >> 3;        // The width of a cell in the checkboard texture.
+	const UINT cellHeight = m_ImageWidth >> 3;    // The height of a cell in the checkerboard texture.
+	const UINT textureSize = rowPitch * m_ImageHeight;
+
+	std::vector<UINT8> data(textureSize);
+	UINT8* pData = &data[0];
+
+	for (UINT n = 0; n < textureSize; n += m_TexturePixelSize)
+	{
+		UINT x = n % rowPitch;
+		UINT y = n / rowPitch;
+		UINT i = x / cellPitch;
+		UINT j = y / cellHeight;
+
+		if (i % 2 == j % 2)
+		{
+			pData[n] = 0x00;        // R
+			pData[n + 1] = 0x00;    // G
+			pData[n + 2] = 0x00;    // B
+			pData[n + 3] = 0xff;    // A
+		}
+		else
+		{
+			pData[n] = 0xff;        // R
+			pData[n + 1] = 0xff;    // G
+			pData[n + 2] = 0xff;    // B
+			pData[n + 3] = 0xff;    // A
+		}
+	}
+
+	return data;
 }

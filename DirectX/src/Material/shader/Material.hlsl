@@ -1,19 +1,21 @@
 struct VSInput
 {
     float4 position : SV_POSITION;
-    float4 color : COLOR;
+    float2 UV : TEXCOORD;
 };
 
-VSInput VSMain(float3 position : POSITION, float4 color : COLOR)
+Texture2D gTexture : register(t0);
+SamplerState g_Sampler : register(s0);
+VSInput VSMain(float3 position : POSITION, float4 uv : TEXCOORD)
 {
     VSInput input;
     input.position = float4(position, 1.0);
-    input.color = color;
+    input.UV = uv;
 
     return input;
 }
 
 float4 PSMain(VSInput input) : SV_TARGET
 {
-    return input.color;
+    return gTexture.Sample(g_Sampler, input.UV);
 }
