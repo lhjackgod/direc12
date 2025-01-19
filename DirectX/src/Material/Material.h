@@ -92,7 +92,13 @@ private:
 		DirectX::XMFLOAT2 uv;
 	};
 
-
+	struct Constant
+	{
+		DirectX::XMFLOAT4 offset;
+		float padding[60];
+	};
+	static_assert(sizeof(Constant) % 256 == 0, "Constant must be x256");
+	Constant m_Constantdata = {};
 	ComPtr<ID3D12Device> m_Device;
 	ComPtr<ID3D12CommandQueue> m_CommandQueue;
 	ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
@@ -106,9 +112,11 @@ private:
 	ComPtr<ID3D12Resource> m_VertexBuffer;
 	ComPtr<ID3D12Resource> m_gpuTextureResource;
 	ComPtr<ID3D12DescriptorHeap> m_SrvDescriptorHeap;
+	ComPtr<ID3D12Resource2> m_ConstantBuffer;
 	HANDLE m_FenceEvent;
 	D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
 	D3D12_VIEWPORT m_ViewPort;
 	D3D12_RECT m_SsiorRect;
+	UINT m_srvSize;
 };
 

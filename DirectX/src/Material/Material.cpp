@@ -86,6 +86,7 @@ void Material::LoadPipeline()
 	m_CurrentBackFrambufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
 
 	RTVTOTALSIZE = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	m_srvSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC descritorHeap{};
 		descritorHeap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
@@ -96,7 +97,7 @@ void Material::LoadPipeline()
 
 		D3D12_DESCRIPTOR_HEAP_DESC srvHeap{};
 		srvHeap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		srvHeap.NumDescriptors = 1;
+		srvHeap.NumDescriptors = 2;
 		srvHeap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		ThrowIfFiled(m_Device->CreateDescriptorHeap(&srvHeap, IID_PPV_ARGS(m_SrvDescriptorHeap.GetAddressOf())));
 
@@ -132,12 +133,13 @@ void Material::LoadAssert()
 	}
 
 
-	CD3DX12_DESCRIPTOR_RANGE1 desciptorRanges[1];
+	CD3DX12_DESCRIPTOR_RANGE1 desciptorRanges[2];
 	desciptorRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
 		1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+	desciptorRanges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
 	CD3DX12_ROOT_PARAMETER1 rootParamter[1];
-	rootParamter[0].InitAsDescriptorTable(1, &desciptorRanges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParamter[0].InitAsDescriptorTable(2, &desciptorRanges[0], D3D12_SHADER_VISIBILITY_ALL);
 
 	CD3DX12_STATIC_SAMPLER_DESC staticSampler{};
 	staticSampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -286,6 +288,30 @@ void Material::LoadAssert()
 		srvDesc.Texture2D.MipLevels = 1;
 		m_Device->CreateShaderResourceView(m_gpuTextureResource.Get(), &srvDesc, m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	}
+	m_Constantdata.offset = { 0.25f, 0.25f, 0.0f, 0.0f };
+
+	UINT constantBufferSize = sizeof(m_Constantdata);
+	ThrowIfFiled(m_Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(m_ConstantBuffer.GetAddressOf())
+	));
+
+	UINT8* constantBufferPoint;
+	CD3DX12_RANGE constantReadRange(0, 0);
+	ThrowIfFiled(m_ConstantBuffer->Map(0, &constantReadRange, reinterpret_cast<void**>(&constantBufferPoint)));
+	memcpy(constantBufferPoint, &m_Constantdata, constantBufferSize);
+	m_ConstantBuffer->Unmap(0, nullptr);
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc{};
+	constantBufferViewDesc.BufferLocation = m_ConstantBuffer->GetGPUVirtualAddress();
+	constantBufferViewDesc.SizeInBytes = sizeof(Constant);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDecriptorHandle(m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 1, m_srvSize);
+	m_Device->CreateConstantBufferView(&constantBufferViewDesc,
+		cbvDecriptorHandle);
 
 	// Close the command list and execute it to begin the initial GPU setup.
 	ThrowIfFiled(m_CommandList->Close());

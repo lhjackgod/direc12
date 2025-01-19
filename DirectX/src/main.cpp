@@ -4,8 +4,8 @@ int WINAPI main(HINSTANCE hInstance, HINSTANCE, LPSTR, int cmdShow)
 {
 	try
 	{
-		Material material(800, 600, L"Material");
-		MaterialWinApplication::Run(hInstance, &material);
+		Material materila(800, 600, L"jack");
+		MaterialWinApplication::Run(hInstance, &materila);
 	}
 	catch (const std::exception& e)
 	{
