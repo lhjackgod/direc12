@@ -134,9 +134,9 @@ void Material::LoadAssert()
 
 
 	CD3DX12_DESCRIPTOR_RANGE1 desciptorRanges[2];
-	desciptorRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+	desciptorRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
 		1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-	desciptorRanges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+	desciptorRanges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
 	CD3DX12_ROOT_PARAMETER1 rootParamter[1];
 	rootParamter[0].InitAsDescriptorTable(2, &desciptorRanges[0], D3D12_SHADER_VISIBILITY_ALL);
@@ -212,9 +212,10 @@ void Material::LoadAssert()
 
 	Vertex vertexs[] =
 	{
-		{{0.0f, 0.5f, 0.0f}, { 0.5f, 0.0f }},
-		{{0.5f, -0.5f, 0.0f}, { 1.0f, 1.0f }},
-		{{-0.5f, -0.5f, 0.0f}, { 0.0f, 1.0f }}
+		{{-0.5f, 0.5f, 0.0f}, { 0.0f, 1.0f }},
+		{{0.5f, -0.5f, 0.0f}, { 1.0f, 0.0f }},
+		{{-0.5f, -0.5f, 0.0f}, { 0.0f, 0.0f }},
+		{{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f}}
 	};
 	UINT vertexBufferSize = sizeof(vertexs);
 	ThrowIfFiled(m_Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -232,6 +233,56 @@ void Material::LoadAssert()
 	m_VertexBufferView.BufferLocation = m_VertexBuffer->GetGPUVirtualAddress();
 	m_VertexBufferView.SizeInBytes = vertexBufferSize;
 	m_VertexBufferView.StrideInBytes = sizeof(Vertex);
+
+	//m_Constantdata.offset = { 0.25f, 0.25f, 0.0f, 0.0f };
+
+	UINT constantBufferSize = sizeof(m_Constantdata);
+	ThrowIfFiled(m_Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(m_ConstantBuffer.GetAddressOf())
+	));
+
+	UINT8* constantBufferPoint;
+	CD3DX12_RANGE constantReadRange(0, 0);
+	ThrowIfFiled(m_ConstantBuffer->Map(0, &constantReadRange, reinterpret_cast<void**>(&constantBufferPoint)));
+	memcpy(constantBufferPoint, &m_Constantdata, constantBufferSize);
+	m_ConstantBuffer->Unmap(0, nullptr);
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc{};
+	constantBufferViewDesc.BufferLocation = m_ConstantBuffer->GetGPUVirtualAddress();
+	constantBufferViewDesc.SizeInBytes = sizeof(Constant);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDecriptorHandle(m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 0, m_srvSize);
+	m_Device->CreateConstantBufferView(&constantBufferViewDesc,
+		cbvDecriptorHandle);
+
+	UINT m_IndexBuffer[]{
+		0, 1, 2,
+		0, 3, 1
+	};
+	UINT indexBufferSize = sizeof(m_IndexBuffer);
+	{
+		ThrowIfFiled(m_Device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(indexBufferSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(m_IndexBuuferUploadHeap.GetAddressOf())
+		));
+
+		UINT8* indexPtr;
+		CD3DX12_RANGE readRange(0, 0);
+		ThrowIfFiled(m_IndexBuuferUploadHeap->Map(0, &readRange, reinterpret_cast<void**>(&indexPtr)));
+		memcpy(indexPtr, m_IndexBuffer, indexBufferSize);
+		m_IndexBuuferUploadHeap->Unmap(0, nullptr);
+	}
+	m_IndexBufferView.BufferLocation = m_IndexBuuferUploadHeap->GetGPUVirtualAddress();
+	m_IndexBufferView.Format = DXGI_FORMAT_R32_UINT;
+	m_IndexBufferView.SizeInBytes = indexBufferSize;
 
 	ComPtr<ID3D12Resource> textureUploadHeap;
 
@@ -286,32 +337,10 @@ void Material::LoadAssert()
 		srvDesc.Format = textureDesc.Format;
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Texture2D.MipLevels = 1;
-		m_Device->CreateShaderResourceView(m_gpuTextureResource.Get(), &srvDesc, m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+		CD3DX12_CPU_DESCRIPTOR_HANDLE handleT(m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 1, m_srvSize);
+		m_Device->CreateShaderResourceView(m_gpuTextureResource.Get(), &srvDesc, handleT);
 	}
-	m_Constantdata.offset = { 0.25f, 0.25f, 0.0f, 0.0f };
 
-	UINT constantBufferSize = sizeof(m_Constantdata);
-	ThrowIfFiled(m_Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(m_ConstantBuffer.GetAddressOf())
-	));
-
-	UINT8* constantBufferPoint;
-	CD3DX12_RANGE constantReadRange(0, 0);
-	ThrowIfFiled(m_ConstantBuffer->Map(0, &constantReadRange, reinterpret_cast<void**>(&constantBufferPoint)));
-	memcpy(constantBufferPoint, &m_Constantdata, constantBufferSize);
-	m_ConstantBuffer->Unmap(0, nullptr);
-
-	D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc{};
-	constantBufferViewDesc.BufferLocation = m_ConstantBuffer->GetGPUVirtualAddress();
-	constantBufferViewDesc.SizeInBytes = sizeof(Constant);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDecriptorHandle(m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 1, m_srvSize);
-	m_Device->CreateConstantBufferView(&constantBufferViewDesc,
-		cbvDecriptorHandle);
 
 	// Close the command list and execute it to begin the initial GPU setup.
 	ThrowIfFiled(m_CommandList->Close());
@@ -359,8 +388,9 @@ void Material::populateCommandList()
 
 	ID3D12DescriptorHeap* ppHeaps[] = {m_SrvDescriptorHeap.Get() };
 	m_CommandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-
-	m_CommandList->SetGraphicsRootDescriptorTable(0, m_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	CD3DX12_GPU_DESCRIPTOR_HANDLE descriptorHandle(m_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	//m_CommandList->SetGraphicsRootDescriptorTable(0, descriptorHandle);
+	m_CommandList->SetGraphicsRootDescriptorTable(0, descriptorHandle);
 	m_CommandList->RSSetViewports(1, &m_ViewPort);
 	m_CommandList->RSSetScissorRects(1, &m_SsiorRect);
 
@@ -375,7 +405,8 @@ void Material::populateCommandList()
 	m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_CommandList->IASetVertexBuffers(0, 1, &m_VertexBufferView);
-	m_CommandList->DrawInstanced(3, 1, 0, 0);
+	m_CommandList->IASetIndexBuffer(&m_IndexBufferView);
+	m_CommandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 	// Indicate that the back buffer will now be used to present.
 	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_Frambuffer[m_CurrentBackFrambufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));

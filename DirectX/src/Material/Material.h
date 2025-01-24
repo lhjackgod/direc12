@@ -118,5 +118,7 @@ private:
 	D3D12_VIEWPORT m_ViewPort;
 	D3D12_RECT m_SsiorRect;
 	UINT m_srvSize;
+	ComPtr<ID3D12Resource> m_IndexBuuferUploadHeap;
+	D3D12_INDEX_BUFFER_VIEW m_IndexBufferView;
 };
 
