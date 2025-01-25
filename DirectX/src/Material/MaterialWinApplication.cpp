@@ -1,3 +1,4 @@
+#ifdef Material
 #include "MaterialWinApplication.h"
 
 HWND MaterialWinApplication::m_Hwnd = nullptr;
@@ -62,3 +63,4 @@ LRESULT MaterialWinApplication::WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
+#endif

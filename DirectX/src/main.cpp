@@ -1,11 +1,11 @@
-#include "Material/Material.h"
-#include "Material/MaterialWinApplication.h"
+#include "HelloBandles/Bandles.h"
+#include "HelloBandles/BandlesApp.h"
 int WINAPI main(HINSTANCE hInstance, HINSTANCE, LPSTR, int cmdShow)
 {
 	try
 	{
-		Material materila(800, 600, L"jack");
-		MaterialWinApplication::Run(hInstance, &materila);
+		Bandles m_bandles(800, 600, L"Hello Bandles");
+		BandlesApp::Run(&m_bandles, hInstance);
 	}
 	catch (const std::exception& e)
 	{

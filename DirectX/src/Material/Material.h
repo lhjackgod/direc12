@@ -1,3 +1,4 @@
+#ifdef Material
 #pragma once
 
 #include <iostream>
@@ -122,3 +123,4 @@ private:
 	D3D12_INDEX_BUFFER_VIEW m_IndexBufferView;
 };
 
+#endif

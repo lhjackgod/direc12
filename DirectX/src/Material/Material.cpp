@@ -1,3 +1,4 @@
+#ifdef Material
 #include "Material.h"
 #include "Material/MaterialWinApplication.h"
 void Material::OnInit()
@@ -499,3 +500,4 @@ std::vector<UINT8> Material::GenerateTextureData()
 
 	return data;
 }
+#endif

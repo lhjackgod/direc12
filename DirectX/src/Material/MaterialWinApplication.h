@@ -1,3 +1,4 @@
+#ifdef Material
 #pragma once
 
 #include "Material/Material.h"
@@ -13,3 +14,4 @@ private:
 	static LRESULT WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
+#endif
