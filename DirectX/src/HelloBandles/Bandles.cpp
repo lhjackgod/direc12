@@ -83,7 +83,12 @@ void Bandles::LoadAssert()
     {
         rootSignatureDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_0;
     }
+    CD3DX12_DESCRIPTOR_RANGE1 descriptorRange[1];
+    descriptorRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+    1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
+    CD3DX12_ROOT_PARAMETER1 rootParam[1];
+    rootParam[0].InitAsDescriptorTable(1, &descriptorRange[0], D3D12_SHADER_VISIBILITY_VERTEX);
     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC versionRootSignatureDesc{};
     versionRootSignatureDesc.Init_1_1(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -133,6 +138,28 @@ void Bandles::LoadAssert()
 
     ThrowIfFiled(m_Device->CreateGraphicsPipelineState(&graphysicalPipelineStateDesc, 
     IID_PPV_ARGS(m_PipelineState.GetAddressOf())));
+    Vertex vertices[]{
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+        {{0.0f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+        {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}
+    };
+    UINT verticesSize = sizeof(vertices);
+    
+    ThrowIfFiled(m_Device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(verticesSize),
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr, IID_PPV_ARGS(vertexBuffer.GetAddressOf())
+    ));
+    UINT8* vertexBufferPtr;
+    CD3DX12_RANGE range(0, 0);
+    ThrowIfFiled(vertexBuffer->Map(0, &range, reinterpret_cast<void**>(&vertexBufferPtr)));
+    memcpy(vertexBufferPtr, vertices, verticesSize);
+    vertexBuffer->Unmap(0, nullptr);
+    m_VertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
+    m_VertexBufferView.SizeInBytes = verticesSize;
+    m_VertexBufferView.StrideInBytes = sizeof(Vertex);
 
     ThrowIfFiled(m_CommandList->Close());
     m_FenceValue++;
@@ -192,11 +219,18 @@ void Bandles::LoadPipeline()
         &rtvHeapDesc, IID_PPV_ARGS(m_RtvDescriptorHeap.GetAddressOf())
     ));
 
+    D3D12_DESCRIPTOR_HEAP_DESC srvDescriptorHeapDesc{};
+    srvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    srvDescriptorHeapDesc.NumDescriptors = 1;
+    srvDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    srvDescriptorHeapDesc.NodeMask = 0;
+
+    ThrowIfFiled(m_Device->CreateDescriptorHeap(&srvDescriptorHeapDesc,
+    IID_PPV_ARGS(m_SrvDescriptorHeap.GetAddressOf())));
+
     m_RtvDescriptorSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
+    m_SrvDescriptorSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-    
     for(UINT n = 0; n < m_FrameCount; n++)
     {
         ThrowIfFiled(m_SwapChain->GetBuffer(n, IID_PPV_ARGS(m_RtvBuffer[n].GetAddressOf())));
@@ -282,6 +316,12 @@ void Bandles::fillOutCommandList()
     m_CommandList->RSSetScissorRects(1, &m_Sissor);
     float clearColor[]{0.0f, 0.3f, 0.2f, 1.0f};
     m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+    ID3D12DescriptorHeap* descriptorHeaps[]{ m_SrvDescriptorHeap.Get()};
+    m_CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+    m_CommandList->IASetVertexBuffers(0, 1, &m_VertexBufferView);
+    m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_CommandList->DrawInstanced(3, 1, 0, 0);
+    
     m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RtvBuffer[m_BackCurrentFrame].Get(),
     D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 

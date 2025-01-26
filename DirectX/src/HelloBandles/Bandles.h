@@ -78,6 +78,10 @@ private:
 	UINT m_RtvDescriptorSize;
 	UINT m_FenceValue = 0;
 	HANDLE m_FenceEvent;
+	ComPtr<ID3D12Resource> vertexBuffer;
+	D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
+	ComPtr<ID3D12DescriptorHeap> m_SrvDescriptorHeap;
+	UINT m_SrvDescriptorSize;
 
 	struct Vertex
 	{
