@@ -110,6 +110,8 @@ void Bandles::LoadAssert()
     }
     ThrowIfFiled(m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE,
     IID_PPV_ARGS(m_Fence.GetAddressOf())));
+    m_BackCurrentFrame = m_SwapChain->GetCurrentBackBufferIndex();
+    m_FenceValue[m_BackCurrentFrame]++;
     ComPtr<ID3DBlob> vShader;
     ComPtr<ID3DBlob> pShader;
     UINT shaderFlag = 0;
@@ -166,8 +168,7 @@ void Bandles::LoadAssert()
     m_VertexBufferView.StrideInBytes = sizeof(Vertex);
 
     ThrowIfFiled(m_CommandList->Close());
-    m_FenceValue++;
-    m_BackCurrentFrame = m_SwapChain->GetCurrentBackBufferIndex();
+    
     ThrowIfFiled(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, m_BundleAllocator.Get(), m_PipelineState.Get(),
         IID_PPV_ARGS(m_Bundle.GetAddressOf())));
     {
@@ -304,15 +305,15 @@ void Bandles::GetAdapter(ComPtr<IDXGIFactory7>& pFactory, IDXGIAdapter1 **adapte
 
 void Bandles::waitForFinish()
 {
-    const int fence = m_FenceValue;
-    m_FenceValue ++;
+    const int fence = m_FenceValue[m_BackCurrentFrame];
+    m_BackCurrentFrame = m_SwapChain->GetCurrentBackBufferIndex();
     ThrowIfFiled(m_CommandQueue->Signal(m_Fence.Get(), fence));
-    if(m_Fence->GetCompletedValue() < m_FenceValue)
+    if(m_Fence->GetCompletedValue() < m_FenceValue[m_BackCurrentFrame])
     {
-        ThrowIfFiled(m_Fence->SetEventOnCompletion(fence, m_FenceEvent));
+        ThrowIfFiled(m_Fence->SetEventOnCompletion(m_FenceValue[m_BackCurrentFrame], m_FenceEvent));
         WaitForSingleObject(m_FenceEvent, INFINITE);
     }
-    m_BackCurrentFrame = m_SwapChain->GetCurrentBackBufferIndex();
+    m_FenceValue[m_BackCurrentFrame] = fence + 1;
 }
 
 void Bandles::fillOutCommandList()

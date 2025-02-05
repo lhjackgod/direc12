@@ -77,7 +77,6 @@ private:
 	ComPtr<ID3D12Fence> m_Fence;
 	ComPtr<ID3D12PipelineState> m_PipelineState;
 	UINT m_RtvDescriptorSize;
-	UINT m_FenceValue = 0;
 	HANDLE m_FenceEvent;
 	ComPtr<ID3D12Resource> vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
@@ -85,7 +84,7 @@ private:
 	UINT m_SrvDescriptorSize;
 	ComPtr<ID3D12CommandAllocator> m_BundleAllocator;
 	ComPtr<ID3D12GraphicsCommandList> m_Bundle;
-
+	UINT64 m_FenceValue[m_FrameCount];
 	struct Vertex
 	{
 		DirectX::XMFLOAT3 pos;
