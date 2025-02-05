@@ -6,7 +6,7 @@
 #include <d3dcompiler.h>
 #include <Windows.h>
 #include <DirectXMath.h>
-
+#include <chrono>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
@@ -63,7 +63,8 @@ private:
 	bool m_UseWarp = false;
 	const static int m_FrameCount = 2;
 	int m_BackCurrentFrame = 0;
-
+	std::chrono::steady_clock::time_point begin;
+	std::chrono::steady_clock::time_point end;
 	ComPtr<IDXGIAdapter1> m_Adapter;
 	ComPtr<ID3D12Device> m_Device;
 	ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
@@ -82,6 +83,8 @@ private:
 	D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
 	ComPtr<ID3D12DescriptorHeap> m_SrvDescriptorHeap;
 	UINT m_SrvDescriptorSize;
+	ComPtr<ID3D12CommandAllocator> m_BundleAllocator;
+	ComPtr<ID3D12GraphicsCommandList> m_Bundle;
 
 	struct Vertex
 	{

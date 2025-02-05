@@ -41,12 +41,16 @@ void Bandles::onInit()
 void Bandles::onRender()
 {
     waitForFinish();
+    begin = std::chrono::high_resolution_clock::now();
     fillOutCommandList();
     
     ID3D12CommandList* commandLists[]{m_CommandList.Get()};
     m_CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
     ThrowIfFiled(m_SwapChain->Present(1, 0));
     waitForFinish();
+    end = std::chrono::high_resolution_clock::now();
+    long long durationTime = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+    std::cout << "Duration Time :" << durationTime <<std::endl;
 }
 
 void Bandles::onUpdate()
@@ -164,6 +168,15 @@ void Bandles::LoadAssert()
     ThrowIfFiled(m_CommandList->Close());
     m_FenceValue++;
     m_BackCurrentFrame = m_SwapChain->GetCurrentBackBufferIndex();
+    ThrowIfFiled(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, m_BundleAllocator.Get(), m_PipelineState.Get(),
+        IID_PPV_ARGS(m_Bundle.GetAddressOf())));
+    {
+        m_Bundle->SetGraphicsRootSignature(m_RootSignature.Get());
+        m_Bundle->IASetVertexBuffers(0, 1, &m_VertexBufferView);
+        m_Bundle->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+        m_Bundle->DrawInstanced(3, 1, 0, 0);
+        ThrowIfFiled(m_Bundle->Close());
+    }
 }
 
 void Bandles::LoadPipeline()
@@ -239,6 +252,7 @@ void Bandles::LoadPipeline()
         );
         rtvHandle.Offset(1, m_RtvDescriptorSize);
     }
+    ThrowIfFiled(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_BUNDLE, IID_PPV_ARGS(m_BundleAllocator.GetAddressOf())));
 }
 
 void Bandles::GetAdapter(ComPtr<IDXGIFactory7>& pFactory, IDXGIAdapter1 **adapter)
@@ -318,9 +332,7 @@ void Bandles::fillOutCommandList()
     m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
     ID3D12DescriptorHeap* descriptorHeaps[]{ m_SrvDescriptorHeap.Get()};
     m_CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-    m_CommandList->IASetVertexBuffers(0, 1, &m_VertexBufferView);
-    m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_CommandList->DrawInstanced(3, 1, 0, 0);
+    m_CommandList->ExecuteBundle(m_Bundle.Get());
     
     m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RtvBuffer[m_BackCurrentFrame].Get(),
     D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
