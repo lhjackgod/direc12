@@ -1,3 +1,4 @@
+#ifdef Bundle
 #pragma once
 #include <wrl.h>
 #include <iostream>
@@ -85,11 +86,23 @@ private:
 	ComPtr<ID3D12CommandAllocator> m_BundleAllocator;
 	ComPtr<ID3D12GraphicsCommandList> m_Bundle;
 	UINT64 m_FenceValue[m_FrameCount];
+	ComPtr<ID3D12Resource> m_IndexBuffer;
+	D3D12_INDEX_BUFFER_VIEW m_IndexBufferView;
+	ComPtr<ID3D12DescriptorHeap> m_dsDescriptorHeap;
+	ComPtr<ID3D12Resource> m_DepthBuffer;
 	struct Vertex
 	{
 		DirectX::XMFLOAT3 pos;
 		DirectX::XMFLOAT4 color;
 	};
+	struct ConstantBuffer
+	{
+		DirectX::XMFLOAT4X4 proj;
+		DirectX::XMFLOAT4 move;
+	};
+	ConstantBuffer m_Constant;
+	ComPtr<ID3D12Resource> m_ConstantBuffer;
+	D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc{};
 private:
 	void LoadAssert();
 	void LoadPipeline();
@@ -98,3 +111,4 @@ private:
 	void fillOutCommandList();
 };
 
+#endif

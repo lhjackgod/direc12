@@ -17,6 +17,8 @@
     <ClInclude Include="src\Material\MaterialWinApplication.h" />
     <ClInclude Include="src\HelloBandles\Bandles.h" />
     <ClInclude Include="src\HelloBandles\BandlesApp.h" />
+    <ClInclude Include="src\Box\BoxApp.h" />
+    <ClInclude Include="src\Box\Box.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\HelloWindow\D3d12HelloWindow.cpp">
@@ -30,5 +32,7 @@
     <ClCompile Include="src\Material\MaterialWinApplication.cpp" />
     <ClCompile Include="src\HelloBandles\Bandles.cpp" />
     <ClCompile Include="src\HelloBandles\BandlesApp.cpp" />
+    <ClCompile Include="src\Box\BoxApp.cpp" />
+    <ClCompile Include="src\Box\Box.cpp" />
   </ItemGroup>
 </Project>

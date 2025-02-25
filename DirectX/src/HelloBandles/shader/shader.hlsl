@@ -1,3 +1,11 @@
+
+cbuffer objectViewMatrix : register(b0)
+{
+    float4x4 proj;
+    float4 move;
+    float4 padding[8];
+};
+
 struct VSInput{
     float4 aPos : SV_POSITION;
     float4 aColor : COLOR;
@@ -6,7 +14,8 @@ struct VSInput{
 VSInput VSmain(float3 aPos : POSITION, float4 aColor : COLOR)
 {
     VSInput input;
-    input.aPos = float4(aPos, 1.0);
+    input.aPos = mul(float4(aPos, 1.0f)
+    ,proj);
     input.aColor = aColor;
     return input;
 }

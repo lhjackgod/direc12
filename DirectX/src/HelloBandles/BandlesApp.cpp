@@ -1,3 +1,4 @@
+#ifdef Bundle
 #include "BandlesApp.h"
 
 HWND BandlesApp::m_Hwnd = nullptr;
@@ -64,3 +65,4 @@ LRESULT BandlesApp::windowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
+#endif

@@ -1,3 +1,4 @@
+#ifdef Bundle
 #pragma once
 #include "HelloBandles/Bandles.h"
 class BandlesApp
@@ -12,4 +13,4 @@ private:
 
 	static LRESULT windowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
-
+#endif
