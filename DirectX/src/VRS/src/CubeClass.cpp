@@ -15,6 +15,7 @@ DirectX::XMFLOAT4 MyColor::Cyan = DirectX::XMFLOAT4(0.f, 1.f, 1.f, 1.f);
 DirectX::XMFLOAT4 MyColor::Magenta = DirectX::XMFLOAT4(1.f, 0.f, 1.f, 1.f);
 void HelloTriangle::OnInit()
 	{
+	startTime = std::chrono::high_resolution_clock::now();
 		LoadPipeline();
 		LoadAsserts();
 	}
@@ -28,12 +29,19 @@ void HelloTriangle::OnInit()
 	void HelloTriangle::OnRender()
 	{
 		populateCommandList();
-
+		
 		ID3D12CommandList* ppCommandList[] = { m_CommandList.Get() };
 		m_CommandQueue->ExecuteCommandLists(_countof(ppCommandList), ppCommandList);
 		ThrowIfFiled(m_SwapChain->Present(1, 0));
 
 		waitForFinish();
+	}
+
+	float HelloTriangle::getDurationTime()
+	{
+		endTime = std::chrono::high_resolution_clock::now();
+		float durationTime = (std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime)).count();
+		return durationTime;
 	}
 
 	void HelloTriangle::OnUpdate()
@@ -43,6 +51,7 @@ void HelloTriangle::OnInit()
 		float y = sinf(phi) * r;
 		float z = cosf(phi) * sinf(theta) * r;
 		m_MainCamera.setCameraPos(DirectX::XMVectorSet(x, y, z, 1.0f));
+		DirectX::XMStoreFloat4(&m_MVPMatrix.durationTime, DirectX::XMVectorSet(getDurationTime() / 1000000.0f, 0.0f, 0.0f, 0.0f));
 		DirectX::XMStoreFloat4x4(&m_MVPMatrix.mvp,
 			DirectX::XMMatrixTranspose(m_CubeModel * m_MainCamera.getViewMatrix() * m_MainCamera.getPerspective()));
 	}
@@ -343,6 +352,7 @@ void HelloTriangle::OnInit()
 	void HelloTriangle::createConstBuffer()
 	{
 		DirectX::XMStoreFloat4x4(&m_MVPMatrix.mvp, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
+		DirectX::XMStoreFloat4(&m_MVPMatrix.durationTime, DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f));
 		UINT constBufferSize = CalcConstBufferByteSize(sizeof(ConstBuffer));
 		ThrowIfFiled(m_Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,

@@ -1,5 +1,6 @@
 cbuffer ConstantBuffer : register(b0)
 {
+    float4 time;
     float4x4 proj;
 };
 
@@ -16,7 +17,8 @@ struct VSInput
 PSInput VSMain(VSInput input)
 {
     PSInput output;
-
+    input.position.xy += 0.5f * sin(input.position.x) * sin(3.0f * time.x);
+    input.position.z *= 0.6f + 0.4f * sin(2.0f * time.x);
     output.position = mul(float4(input.position, 1.0), proj);
     output.color = input.color;
 

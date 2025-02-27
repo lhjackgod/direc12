@@ -7,6 +7,7 @@
 #include <iostream>
 #include <DirectXMath.h>
 #include "Camera.h"
+#include <chrono>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
@@ -100,6 +101,7 @@ inline std::string HrToString(HRESULT hr)
 		};
 		struct ConstBuffer
 		{
+			DirectX::XMFLOAT4 durationTime;
 			DirectX::XMFLOAT4X4 mvp;
 		}m_MVPMatrix;
 		ComPtr<ID3D12Device> m_Device;
@@ -129,10 +131,13 @@ inline std::string HrToString(HRESULT hr)
 		HANDLE m_FenceEvent;
 		Camera m_MainCamera;
 		DirectX::XMMATRIX m_CubeModel = DirectX::XMMatrixIdentity();
+		DirectX::XMVECTOR cubePos;
 		int currentMouseLoX;
 		int currentMouseLoY;
 		float theta = 0.0f;
 		float phi = 0.0f;
+		std::chrono::high_resolution_clock::time_point startTime;
+		std::chrono::high_resolution_clock::time_point endTime;
 	private:
 		void LoadPipeline();
 		void LoadAsserts();
@@ -159,6 +164,7 @@ inline std::string HrToString(HRESULT hr)
 		void createConstBufferView();
 		void UpdateBuffer(ComPtr<ID3D12Resource>& defaultBuffer, ComPtr<ID3D12Resource>& uploadBuffer, UINT byteSize,
 			void* data);
+		float getDurationTime();
 	};
 
 
