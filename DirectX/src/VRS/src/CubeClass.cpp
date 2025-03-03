@@ -1,4 +1,5 @@
 #include "CubeClass.h"
+
 #include <d3dx12.h>
 #include "WinApp.h"
 #include <array>
@@ -59,11 +60,14 @@ void HelloTriangle::OnInit()
 	void HelloTriangle::UpdateBuffer(ComPtr<ID3D12Resource>& defaultBuffer, ComPtr<ID3D12Resource>& uploadBuffer, UINT byteSize,
 		void* data)
 	{
+	ComPtr<ID3DBlob> mData;
+	ThrowIfFiled(D3DCreateBlob(byteSize, mData.GetAddressOf()));
+	memcpy(mData->GetBufferPointer(), data, byteSize);
 		m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(),
 			D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST));
 		D3D12_SUBRESOURCE_DATA subResourceData{};
-		subResourceData.pData = data;
-		subResourceData.RowPitch = byteSize;
+		subResourceData.pData = mData->GetBufferPointer();
+		subResourceData.RowPitch = mData->GetBufferSize();
 		subResourceData.SlicePitch = subResourceData.RowPitch;
 		UpdateSubresources(m_CommandList.Get(), defaultBuffer.Get(), uploadBuffer.Get(), 0, 0, 1, &subResourceData);
 		m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(),
@@ -268,7 +272,6 @@ void HelloTriangle::OnInit()
 		descriptorRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0);
 		CD3DX12_ROOT_PARAMETER1 rootParamter[1];
 		rootParamter[0].InitAsDescriptorTable(1, &descriptorRange[0]);
-
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc{};
 		rootSignatureDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
 		if(FAILED(m_Device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, 

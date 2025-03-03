@@ -3,7 +3,6 @@ cbuffer ConstantBuffer : register(b0)
     float4 time;
     float4x4 proj;
 };
-
     struct PSInput
 {
     float4 position : SV_POSITION;

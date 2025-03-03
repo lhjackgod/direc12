@@ -13,7 +13,7 @@
 #pragma comment(lib, "d3dcompiler.lib")
 
 using Microsoft::WRL::ComPtr;
-
+extern class ConstBufferClass;
 struct MathHeap
 {
 	static DirectX::XMFLOAT4X4 getMatrixIdentity()
@@ -104,6 +104,10 @@ inline std::string HrToString(HRESULT hr)
 			DirectX::XMFLOAT4 durationTime;
 			DirectX::XMFLOAT4X4 mvp;
 		}m_MVPMatrix;
+		struct ConstBuffer2
+		{
+			float time;
+		}Time;
 		ComPtr<ID3D12Device> m_Device;
 		ComPtr<ID3D12CommandQueue> m_CommandQueue;
 		ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
