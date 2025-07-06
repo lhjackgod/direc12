@@ -1,7 +1,9 @@
 struct vShaderInput
 {
     float3 aPos : POSITION;
-    float4 aColor : COLOR;
+	float3 aNormal : NORMAL;
+	float3 aTangent : TANGENT;
+    float2 aUV : TEXCOORD;
 };
 
 struct pShaderInput
@@ -14,11 +16,11 @@ pShaderInput VSMain(vShaderInput input)
 {
     pShaderInput output;
     output.aPos = float4(input.aPos, 1.0f);
-    output.aColor = input.aColor;
+	output.aColor = float4(1,1,1,1);
     return output;
 }
 
 float4 PSMain(pShaderInput input) : SV_TARGET
 {
-    return input.aColor;
+    return float4(1,1,1,1);
 }

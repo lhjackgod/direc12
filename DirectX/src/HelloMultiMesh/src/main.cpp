@@ -5,6 +5,17 @@
 
 int WINAPI main(HINSTANCE hInstance, HINSTANCE, LPSTR, int cmdShow)
 {
+    HINSTANCE hUser32 = LoadLibrary(L"user32.dll");
+    if (hUser32)
+    {
+        using SetProcessDPIAware = BOOL(WINAPI*)(void);
+        auto pSetProcessDPIAware = (SetProcessDPIAware)GetProcAddress(hUser32, "SetProcessDPIAware");
+        if (pSetProcessDPIAware)
+        {
+            pSetProcessDPIAware();
+        }
+        FreeLibrary(hUser32);
+    }
     try
     {
         MultiMesh mesh(800, 600);

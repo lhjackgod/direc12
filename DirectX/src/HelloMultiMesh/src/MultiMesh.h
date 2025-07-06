@@ -1,22 +1,25 @@
 #pragma once
 #include "Shader.h"
 #include "Mesh.h"
+
 class MultiMesh
 {
 public:
     MultiMesh(int width, int height)
-        :m_Width(width), m_Height(height)
+        : m_Width(width), m_Height(height)
     {
-        m_ViewPort = D3D12_VIEWPORT{0, 0, (float)m_Width, (float)m_Height};
+        m_ViewPort = D3D12_VIEWPORT{0, 0, static_cast<float>(m_Width), static_cast<float>(m_Height)};
         m_Scissor = D3D12_RECT{0, 0, m_Width, m_Height};
     }
+
     void OnInint();
     void OnUpdate();
     void OnRender();
     void OnDestroy();
 
-    int getWidth() {return m_Width;}
-    int getHeight() {return m_Height;}
+    int getWidth() { return m_Width; }
+    int getHeight() { return m_Height; }
+
 private:
     void initPipeline();
     void initAsserts();
@@ -30,13 +33,13 @@ private:
     void createDescriptorHeap();
     void createRTV();
     void createDSV();
-
+    
     void populateCommanddList();
     void waitForFinish();
-private:
+    bool checkTearingSupport(ComPtr<IDXGIFactory7>& factory);
     int m_Width;
     int m_Height;
-    const static int m_RenderTartgetBufferCount = 2;
+    static constexpr int m_RenderTartgetBufferCount = 2;
     int m_RenderTargetBufferIndex = 0;
     int m_RTVDescriptorSize;
 
@@ -56,8 +59,6 @@ private:
     ComPtr<ID3D12Resource> m_DepthStencilBuffer;
     ComPtr<ID3D12CommandAllocator> m_MainAllocator;
     ComPtr<ID3D12GraphicsCommandList> m_MainCommandList;
-    
     Shader m_Shader;
-    Mesh m_Mesh1;
-    Mesh m_Mesh2;
+    Scene m_Scene;
 };

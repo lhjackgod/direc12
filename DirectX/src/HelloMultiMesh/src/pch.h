@@ -24,7 +24,9 @@ class MyException : public std::runtime_error
 {
 public:
     MyException(HRESULT hr)
-        :std::runtime_error(MyToString(hr)){}
+        : std::runtime_error(MyToString(hr))
+    {
+    }
 };
 
 inline void ThrowIfFailed(HRESULT hr)

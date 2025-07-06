@@ -28,6 +28,14 @@ void MultiMesh::OnRender()
 
 void MultiMesh::OnDestroy()
 {
+    free(m_FenceEvent);
+}
+
+bool MultiMesh::checkTearingSupport(ComPtr<IDXGIFactory7>& factory)
+{
+    bool ret = false;
+    factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &ret, sizeof(ret));
+    return ret;
 }
 
 void MultiMesh::initPipeline()
@@ -37,6 +45,10 @@ void MultiMesh::initPipeline()
     debugController->EnableDebugLayer();
     ComPtr<IDXGIFactory7> factory;
     ThrowIfFailed(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(factory.GetAddressOf())));
+    if (checkTearingSupport(factory))
+    {
+        throw std::runtime_error("Tearing support is not supported");
+    }
     createDevice(factory);
     createCommandQueue();
     createCommandAllocator();
@@ -50,6 +62,8 @@ void MultiMesh::initPipeline()
 
 void MultiMesh::initAsserts()
 {
+    DIRECTX::MeshData Sphere = GenerateSphereMesh(1.0f, 32, 16);
+    m_Scene.addMesh(Sphere);
     MYMESH::Vertex v1 = {
         {-1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}
     };
@@ -68,22 +82,19 @@ void MultiMesh::initAsserts()
     MYMESH::Vertex v6 = {
         {1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}
     };
-    MYMESH::Vertex* triangle1 = new MYMESH::Vertex[3] {v1, v2, v3};
-    MYMESH::Vertex* triangle2 = new MYMESH::Vertex[3] {v4, v5, v6};
-    m_Shader.OnInit(L"src/shader/shader.hlsl", L"src/shader/shader.hlsl", Mesh::getInputElementDesc(),
-        Mesh::getInputElementCount(), nullptr, 0, 0, nullptr, m_Device
-        );
-    m_Mesh1.OnInit(triangle1, 3, m_Device);
-    m_Mesh2.OnInit(triangle2, 3, m_Device);
-    
+    auto triangle1 = new MYMESH::Vertex[3]{v1, v2, v3};
+    auto triangle2 = new MYMESH::Vertex[3]{v4, v5, v6};
+    m_Shader.OnInit(L"src/shader/shader.hlsl", L"src/shader/shader.hlsl", DIRECTX::Vertex::getInputElementDesc(),
+                    DIRECTX::Vertex::getInputSize(), nullptr, 0, 0, nullptr, m_Device
+    );
 }
 
 void MultiMesh::createDevice(ComPtr<IDXGIFactory7> factory)
 {
     ComPtr<IDXGIAdapter1> pAdapter;
     for (UINT adapterIndex = 0;
-        factory->EnumAdapterByGpuPreference(adapterIndex, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
-            IID_PPV_ARGS(pAdapter.GetAddressOf())); adapterIndex++)
+         factory->EnumAdapterByGpuPreference(adapterIndex, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
+                                             IID_PPV_ARGS(pAdapter.GetAddressOf())); adapterIndex++)
     {
         DXGI_ADAPTER_DESC1 adapterDesc{};
         pAdapter->GetDesc1(&adapterDesc);
@@ -98,7 +109,7 @@ void MultiMesh::createDevice(ComPtr<IDXGIFactory7> factory)
     }
     if (pAdapter == nullptr)
     {
-        for (UINT adapterIndex = 0; factory->EnumAdapters1(adapterIndex, pAdapter.GetAddressOf());adapterIndex++)
+        for (UINT adapterIndex = 0; factory->EnumAdapters1(adapterIndex, pAdapter.GetAddressOf()); adapterIndex++)
         {
             DXGI_ADAPTER_DESC1 desc{};
             pAdapter->GetDesc1(&desc);
@@ -130,13 +141,15 @@ void MultiMesh::createCommandQueue()
 
 void MultiMesh::createCommandAllocator()
 {
-    ThrowIfFailed(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_MainAllocator.GetAddressOf())));
+    ThrowIfFailed(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
+                                                   IID_PPV_ARGS(m_MainAllocator.GetAddressOf())));
 }
 
 void MultiMesh::createCommandList()
 {
     ThrowIfFailed(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
-        m_MainAllocator.Get(), nullptr, IID_PPV_ARGS(m_MainCommandList.GetAddressOf())));
+                                              m_MainAllocator.Get(), nullptr,
+                                              IID_PPV_ARGS(m_MainCommandList.GetAddressOf())));
     ThrowIfFailed(m_MainCommandList->Close());
 }
 
@@ -157,7 +170,7 @@ DXGI_SAMPLE_DESC MultiMesh::createSampleDesc(const DXGI_FORMAT& format)
     msQualityLevels.SampleCount = 4;
     msQualityLevels.Format = format;
     if (m_Device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
-        &msQualityLevels, sizeof(msQualityLevels)))
+                                      &msQualityLevels, sizeof(msQualityLevels)))
     {
         sampleDesc.Count = 4;
         sampleDesc.Quality = msQualityLevels.NumQualityLevels - 1;
@@ -173,7 +186,7 @@ DXGI_SAMPLE_DESC MultiMesh::createSampleDesc(const DXGI_FORMAT& format)
 void MultiMesh::createSwapChain(const ComPtr<IDXGIFactory7>& factory)
 {
     ComPtr<IDXGISwapChain1> pSwapChain;
-    
+
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
     swapChainDesc.Width = m_Width;
     swapChainDesc.Height = m_Height;
@@ -186,8 +199,9 @@ void MultiMesh::createSwapChain(const ComPtr<IDXGIFactory7>& factory)
     {
         std::cerr << "jack" << std::endl;
     }
-    ThrowIfFailed(factory->CreateSwapChainForHwnd(m_CommandQueue.Get(), WinApp::getWindowHandle(), &swapChainDesc, nullptr, nullptr,
-        pSwapChain.GetAddressOf()));
+    ThrowIfFailed(factory->CreateSwapChainForHwnd(m_CommandQueue.Get(), WinApp::getWindowHandle(), &swapChainDesc,
+                                                  nullptr, nullptr,
+                                                  pSwapChain.GetAddressOf()));
     ThrowIfFailed(pSwapChain.As(&m_SwapChain));
     m_RenderTargetBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
     m_RenderTargetValue[m_RenderTargetBufferIndex] = 1;
@@ -211,7 +225,9 @@ void MultiMesh::createDescriptorHeap()
     cbvSrvUavHeapDesc.NumDescriptors = 1;
     cbvSrvUavHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     cbvSrvUavHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    ThrowIfFailed(m_Device->CreateDescriptorHeap(&cbvSrvUavHeapDesc, IID_PPV_ARGS(m_CBV_SRV_UAVDescriptorHeap.GetAddressOf())));
+    ThrowIfFailed(m_Device->CreateDescriptorHeap(&cbvSrvUavHeapDesc,
+                                                 IID_PPV_ARGS(m_CBV_SRV_UAVDescriptorHeap.GetAddressOf())));
+    
 }
 
 void MultiMesh::createRTV()
@@ -244,15 +260,18 @@ void MultiMesh::createDSV()
     clearValue.Format = depthStencilDesc.Format;
     clearValue.DepthStencil.Depth = 1.0f;
     clearValue.DepthStencil.Stencil = 0;
-    
+
     ThrowIfFailed(m_Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-        D3D12_HEAP_FLAG_NONE, &depthStencilDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(m_DepthStencilBuffer.GetAddressOf())));
+                                                    D3D12_HEAP_FLAG_NONE, &depthStencilDesc,
+                                                    D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue,
+                                                    IID_PPV_ARGS(m_DepthStencilBuffer.GetAddressOf())));
 
     D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
     dsvDesc.Format = depthStencilDesc.Format;
     dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
     dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-    m_Device->CreateDepthStencilView(m_DepthStencilBuffer.Get(), &dsvDesc, m_DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    m_Device->CreateDepthStencilView(m_DepthStencilBuffer.Get(), &dsvDesc,
+                                     m_DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
 void MultiMesh::populateCommanddList()
@@ -260,9 +279,10 @@ void MultiMesh::populateCommanddList()
     ThrowIfFailed(m_MainAllocator->Reset());
     ThrowIfFailed(m_MainCommandList->Reset(m_MainAllocator.Get(), m_Shader.getPipelineSate().Get()));
     m_MainCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
-        m_RenderTargetBuffer[m_RenderTargetBufferIndex].Get(),
-        D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-    CD3DX12_CPU_DESCRIPTOR_HANDLE renderTarget(m_RTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_RenderTargetBufferIndex, m_RTVDescriptorSize);
+                                           m_RenderTargetBuffer[m_RenderTargetBufferIndex].Get(),
+                                           D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    CD3DX12_CPU_DESCRIPTOR_HANDLE renderTarget(m_RTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+                                               m_RenderTargetBufferIndex, m_RTVDescriptorSize);
     CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle(m_DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
     m_MainCommandList->OMSetRenderTargets(1, &renderTarget, false, &depthHandle);
     m_MainCommandList->RSSetViewports(1, &m_ViewPort);
@@ -270,11 +290,12 @@ void MultiMesh::populateCommanddList()
     float clearColor[4] = {0.0f, 0.3f, 0.2f, 1.0f};
     m_MainCommandList->ClearRenderTargetView(renderTarget, clearColor, 0, nullptr);
     m_MainCommandList->ClearDepthStencilView(depthHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-    m_Mesh1.render(m_MainCommandList, m_Shader);
-    m_Mesh2.render(m_MainCommandList, m_Shader);
+    reinterpret_cast<ID3D12GraphicsCommandList5*>(m_MainCommandList.Get())->RSSetShadingRate(D3D12_SHADING_RATE_4X4, nullptr);
+    
     m_MainCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
-        m_RenderTargetBuffer[m_RenderTargetBufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET,
-        D3D12_RESOURCE_STATE_PRESENT));
+                                           m_RenderTargetBuffer[m_RenderTargetBufferIndex].Get(),
+                                           D3D12_RESOURCE_STATE_RENDER_TARGET,
+                                           D3D12_RESOURCE_STATE_PRESENT));
     ThrowIfFailed(m_MainCommandList->Close());
 }
 
@@ -286,7 +307,7 @@ void MultiMesh::waitForFinish()
     if (m_Fence->GetCompletedValue() < m_RenderTargetValue[m_RenderTargetBufferIndex])
     {
         ThrowIfFailed(m_Fence->SetEventOnCompletion(m_RenderTargetValue[m_RenderTargetBufferIndex],
-            m_FenceEvent));
+                                                    m_FenceEvent));
         WaitForSingleObject(m_FenceEvent, INFINITE);
     }
     m_RenderTargetValue[m_RenderTargetBufferIndex] = fenceValue + 1;

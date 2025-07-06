@@ -21,11 +21,11 @@ int WinApp::Run(HINSTANCE hInstance, MultiMesh* mesh, int width, int height, con
     rect.top = 0;
     AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
     mHwnd = CreateWindow(winClass.lpszClassName, winName, WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left,
-        rect.bottom - rect.top, nullptr, nullptr, hInstance, mesh);
+                         CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left,
+                         rect.bottom - rect.top, nullptr, nullptr, hInstance, mesh);
     mesh->OnInint();
     ShowWindow(mHwnd, SW_SHOW);
-    MSG message{0};
+    MSG message{nullptr};
     while (message.message != WM_QUIT)
     {
         if (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE))
@@ -48,14 +48,13 @@ HWND WinApp::getWindowHandle()
 
 LRESULT WinApp::winProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    MultiMesh* mesh = reinterpret_cast<MultiMesh*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    auto mesh = reinterpret_cast<MultiMesh*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
     switch (msg)
     {
     case WM_CREATE:
         {
-            LPCREATESTRUCT lpCreateStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
-            SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR
-                >(lpCreateStruct->lpCreateParams));
+            auto lpCreateStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(lpCreateStruct->lpCreateParams));
         }
         return 0;
     case WM_PAINT:
