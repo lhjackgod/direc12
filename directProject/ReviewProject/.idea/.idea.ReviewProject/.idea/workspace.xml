@@ -8,26 +8,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d522312f-f768-4ba6-996c-7becd1fbfc54" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Camera.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Camera.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Camera.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Camera.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Mesh.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Mesh.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Mesh.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Mesh.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/MultiMesh.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/MultiMesh.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/MultiMesh.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/MultiMesh.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Shader.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Shader.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Shader.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/Shader.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/WinApp.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/WinApp.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/WinApp.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/WinApp.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/d3dx12.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/d3dx12.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/main.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/pch.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/pch.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/pch.h" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/pch.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/shader/shader.hlsl" beforeDir="false" afterPath="$PROJECT_DIR$/../../DirectX/src/HelloMultiMesh/src/shader/shader.hlsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../VRS" beforeDir="false" afterPath="$PROJECT_DIR$/../../VRS" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.ReviewProject/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.ReviewProject/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ReviewProject/source/D3DUtil.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ReviewProject/source/D3DUtil.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ReviewProject/source/D3DUtil.h" beforeDir="false" afterPath="$PROJECT_DIR$/ReviewProject/source/D3DUtil.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReviewProject/source/core/D3DApp.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ReviewProject/source/core/D3DApp.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ReviewProject/source/review/reviewWinApp.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ReviewProject/source/review/reviewWinApp.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReviewProject/source/review/reviewWinApp.h" beforeDir="false" afterPath="$PROJECT_DIR$/ReviewProject/source/review/reviewWinApp.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReviewProject/source/shader/vertexTemple.hlsl" beforeDir="false" afterPath="$PROJECT_DIR$/ReviewProject/source/shader/vertexTemple.hlsl" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,9 +42,12 @@
     <setting file="file://C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/um/WinUser.h" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/um/d3d12.h" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/um/d3dcommon.h" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/um/d3dcompiler.h" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/um/debugapi.h" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/um/synchapi.h" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/um/winnt.h" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/winrt/wrl/client.h" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.36.32532/include/iosfwd" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.36.32532/include/utility" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.36.32532/include/vcruntime.h" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.36.32532/include/vcruntime_exception.h" root0="SKIP_HIGHLIGHTING" />
@@ -130,7 +121,13 @@
       <workItem from="1751459034579" duration="3196000" />
       <workItem from="1751544058540" duration="2808000" />
       <workItem from="1751702931636" duration="6930000" />
-      <workItem from="1751781408408" duration="7286000" />
+      <workItem from="1751781408408" duration="7957000" />
+      <workItem from="1751938533066" duration="13940000" />
+      <workItem from="1752062353424" duration="7159000" />
+      <workItem from="1752125595210" duration="5905000" />
+      <workItem from="1752238769662" duration="4059000" />
+      <workItem from="1752324148306" duration="2533000" />
+      <workItem from="1752388358563" duration="13488000" />
     </task>
     <servers />
   </component>

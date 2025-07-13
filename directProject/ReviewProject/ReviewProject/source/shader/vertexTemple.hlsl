@@ -1,37 +1,24 @@
+
+//将纹理资源绑定到纹理寄存器槽0
+Texture2D gDiffuseMap : register(t0);
+
+//把下列采样器资源依次绑定到采样器寄存器槽0~5
+SamplerState gsamPointWrap : register(s0);
+SamplerState gsamPointClamp : register(s1);
+SamplerState gsamLinearWrap : register(s2);
+SamplerState gsamLinearClamp : register(s3);
+SamplerState gsamAnisotropicWrap : register(s4);
+SamplerState gsamAnisotropicClamp : register(s5);
+
+//将常量缓冲区资源cbuffer绑定到常量缓冲区寄存器槽0
 cbuffer cbPerObject : register(b0)
 {
-    float4x4 gWorldViewProj;
+    float4x4 gWorld;
+    float4x4 gView;
 };
 
-struct ObjectConsts
+cbuffer cbMaterial : register(b1)
 {
-    float4x4 gWorldViewProj;
-    uint matIndex;
+    float4 gDiffuseAlbedo;
+    float3 gFresnelRo;
 };
-ConstantBuffer<ObjectConsts> gObjectConstants : register(b0);
-uint index = gObjectConstants.matIndex;
-struct VertexIn
-{
-    float3 PosL : POSITION;
-    float4 Color : COLOR;
-};
-
-struct VertexOut
-{
-    float4 PosH : SV_POSITION;
-    float4 Color : COLOR:
-};
-
-void VS(VertexIn vin)
-{
-    VertexOut vout;
-    vout.PosH = mul(float4(vin.PosL, 1.0f), gWorldViewProj);
-    vout.Color = vin.Color;
-    return vout;       
-}
-
-float4 PS(VertexOut pin) : SV_Target
-{
-    return vout.Color;
-}
-// or (float4 PosH : SV_POSITION, float4 color : COLOR) : SV_Target

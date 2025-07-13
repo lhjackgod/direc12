@@ -1,5 +1,6 @@
 #include "D3DUtil.h"
 #include "core/d3dx12.h"
+#include <fstream>
 namespace d3dUtil
 {
     Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
@@ -50,4 +51,38 @@ namespace d3dUtil
     {
         return (byteSize + 255) & ~255;
     }
+
+    Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const std::wstring& filename, const D3D_SHADER_MACRO* defines, const std::string& entrypoint, const std::string& target)
+    {
+        UINT compileFlags = 0;
+#if defined(DEBUG) || defined(_DEBUG)
+        compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+        #endif
+
+        HRESULT hr = S_OK;
+        Microsoft::WRL::ComPtr<ID3DBlob> byteCode = nullptr;
+        Microsoft::WRL::ComPtr<ID3DBlob> errors;
+        hr = D3DCompileFromFile(filename.c_str(), defines, nullptr, entrypoint.c_str(), target.c_str(), compileFlags, 0, byteCode.GetAddressOf(), errors.GetAddressOf());
+
+        if (errors != nullptr)
+        {
+            OutputDebugStringA((char*)errors->GetBufferPointer());
+        }
+        ThrowIfFailed(hr);
+        return byteCode;
+    }
+    Microsoft::WRL::ComPtr<ID3DBlob> LoadBinary(const std::wstring& filename)
+    {
+        std::ifstream fin(filename, std::ios::binary);
+        fin.seekg(0, std::ios_base::end);
+        std::fstream::pos_type fileSize = fin.tellg();
+        fin.seekg(0, std::ios_base::beg);
+        Microsoft::WRL::ComPtr<ID3DBlob> blob;
+        ThrowIfFailed(D3DCreateBlob(fileSize, blob.GetAddressOf()));
+        fin.read((char*)blob->GetBufferPointer(), fileSize);
+        fin.close();
+        return blob;
+    }
+
+
 }

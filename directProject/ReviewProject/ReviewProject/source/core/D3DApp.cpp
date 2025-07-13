@@ -5,8 +5,6 @@
 #include <array>
 #include <assert.h>
 
-#include "d3dx12.h"
-
 LRESULT CALLBACK
 MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
